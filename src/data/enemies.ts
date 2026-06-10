@@ -1,0 +1,52 @@
+export const enemyDefinitions = {
+  small: {
+    hpMultiplier: 0.62,
+    speedMultiplier: 1.14,
+    radius: 24,
+    scoreValue: 50,
+    color: 0x4fcf78,
+    shape: "circle",
+  },
+  normal: {
+    hpMultiplier: 1,
+    speedMultiplier: 1,
+    radius: 34,
+    scoreValue: 100,
+    color: 0x7e3fb8,
+    shape: "circle",
+  },
+  tank: {
+    hpMultiplier: 1.75,
+    speedMultiplier: 0.78,
+    radius: 44,
+    scoreValue: 200,
+    color: 0xb84a4a,
+    shape: "circle",
+  },
+  swift: {
+    hpMultiplier: 0.82,
+    speedMultiplier: 1.36,
+    radius: 28,
+    scoreValue: 120,
+    color: 0x49b8cf,
+    shape: "diamond",
+  },
+  brute: {
+    hpMultiplier: 2.45,
+    speedMultiplier: 0.72,
+    radius: 50,
+    scoreValue: 260,
+    color: 0xd06a2c,
+    shape: "square",
+  },
+  orb: {
+    hpMultiplier: 1.22,
+    speedMultiplier: 1.08,
+    radius: 32,
+    scoreValue: 180,
+    color: 0xd7c94f,
+    shape: "diamond",
+  },
+} as const;
+
+export type EnemyType = keyof typeof enemyDefinitions;
