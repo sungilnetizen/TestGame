@@ -21,16 +21,6 @@ export class EffectSystem {
       color: "#d6b8a2",
     });
 
-    const rift = this.scene.add.ellipse(195, 62, 180, 44, 0x8137b6, 0.58).setStrokeStyle(3, 0xf0b7ff, 0.9);
-    this.scene.tweens.add({
-      targets: rift,
-      scaleX: 1.08,
-      scaleY: 0.82,
-      yoyo: true,
-      repeat: -1,
-      duration: 900,
-    });
-
     for (let i = 0; i < 40; i += 1) {
       this.scene.add.rectangle(
         Phaser.Math.Between(8, 382),

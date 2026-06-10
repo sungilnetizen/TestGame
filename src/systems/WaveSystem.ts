@@ -56,7 +56,7 @@ export class WaveSystem {
 
       spawns.push({
         x,
-        y: 86 - i * 18,
+        y: -36 - i * 18,
         hp: Math.round(wave.monsterHp * typeConfig.hpMultiplier),
         fallSpeed: wave.fallSpeed * typeConfig.speedMultiplier,
         type: monsterType,

@@ -7,8 +7,8 @@ export const balanceConfig = {
   player: {
     startX: 195,
     startY: 700,
-    width: 30,
-    height: 42,
+    width: 36,
+    height: 50,
     gravity: 1900,
     jumpPower: 1160,
   },
