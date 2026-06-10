@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
 import type { Monster } from "../entities/Monster";
 import type { Player } from "../entities/Player";
 import type { RunUpgradeState } from "./UpgradeSystem";
@@ -119,6 +120,23 @@ export class AttackSystem {
   ): void {
     const attackArcStart = 270 - attackArcDegrees / 2;
     const attackArcEnd = 270 + attackArcDegrees / 2;
+
+    if (this.scene.textures.exists(IMAGE_ASSETS.SLASH_BASIC.key)) {
+      const slashImage = this.scene.add
+        .image(attackCenterX, attackCenterY, IMAGE_ASSETS.SLASH_BASIC.key)
+        .setDisplaySize(attackRadius * 2, attackRadius * 2)
+        .setDepth(650);
+      this.scene.tweens.add({
+        targets: slashImage,
+        alpha: 0,
+        scaleX: upgradeState.giantSword > 0 ? 1.28 : 1.1,
+        scaleY: upgradeState.giantSword > 0 ? 1.28 : 1.1,
+        duration: balanceConfig.combat.slashDuration,
+        onComplete: () => slashImage.destroy(),
+      });
+      return;
+    }
+
     const slash = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY });
     slash.fillStyle(upgradeState.fireSword > 0 ? 0xff6236 : 0xffe071, 0.32);
     slash.lineStyle(5, upgradeState.fireSword > 0 ? 0xffb15c : 0xfff6b0, 0.94);

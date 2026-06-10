@@ -44,7 +44,17 @@ export class Monster extends Phaser.GameObjects.Container {
     this.core = this.createCore(scene, typeConfig.shape, typeConfig.color);
     const eye = scene.add.rectangle(0, -3, 18, 5, 0xf8f1ff);
 
-    this.add([this.core, eye]);
+    if (scene.textures.exists(typeConfig.assetKey)) {
+      const sprite = scene.add
+        .image(0, 0, typeConfig.assetKey)
+        .setDisplaySize(this.radius * 2, this.radius * 2);
+      this.core.setVisible(false);
+      eye.setVisible(false);
+      this.add([sprite, this.core, eye]);
+    } else {
+      this.add([this.core, eye]);
+    }
+
     scene.add.existing(this);
   }
 

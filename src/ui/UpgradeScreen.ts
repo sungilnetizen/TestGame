@@ -7,6 +7,7 @@ import {
   UpgradeDefinition,
   UpgradeSystem,
 } from "../systems/UpgradeSystem";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
 
 type UpgradeScreenOptions = {
   state: RunUpgradeState;
@@ -83,10 +84,8 @@ export class UpgradeScreen {
     options: UpgradeScreenOptions,
   ): Phaser.GameObjects.Container {
     const card = this.scene.add.container(x, y).setScale(0.94);
-    const panel = this.scene.add
-      .rectangle(0, 0, 318, 104, 0x18202a, 0.96)
-      .setStrokeStyle(3, upgrade.category === "Attack" ? 0xffe071 : 0x9ad7ff, 0.92)
-      .setInteractive({ useHandCursor: true });
+    const panel = this.createCardPanel(upgrade);
+    const icon = this.createUpgradeIcon(upgrade);
     const category = this.scene.add
       .text(-138, -37, upgrade.category, {
         fontFamily: "monospace",
@@ -124,7 +123,7 @@ export class UpgradeScreen {
       })
       .setOrigin(1, 0.5);
 
-    card.add([panel, category, title, description, levelText, maxText]);
+    card.add(icon ? [panel, icon, category, title, description, levelText, maxText] : [panel, category, title, description, levelText, maxText]);
 
     panel.on("pointerover", () => card.setScale(1));
     panel.on("pointerout", () => card.setScale(0.94));
@@ -139,5 +138,27 @@ export class UpgradeScreen {
     });
 
     return card;
+  }
+
+  private createCardPanel(upgrade: UpgradeDefinition): Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle {
+    if (this.scene.textures.exists(IMAGE_ASSETS.UPGRADE_CARD_BG.key)) {
+      return this.scene.add
+        .image(0, 0, IMAGE_ASSETS.UPGRADE_CARD_BG.key)
+        .setDisplaySize(318, 104)
+        .setInteractive({ useHandCursor: true });
+    }
+
+    return this.scene.add
+      .rectangle(0, 0, 318, 104, 0x18202a, 0.96)
+      .setStrokeStyle(3, upgrade.category === "Attack" ? 0xffe071 : 0x9ad7ff, 0.92)
+      .setInteractive({ useHandCursor: true });
+  }
+
+  private createUpgradeIcon(upgrade: UpgradeDefinition): Phaser.GameObjects.Image | undefined {
+    if (!upgrade.iconKey || !this.scene.textures.exists(upgrade.iconKey)) return undefined;
+
+    return this.scene.add
+      .image(-116, 0, upgrade.iconKey)
+      .setDisplaySize(38, 38);
   }
 }

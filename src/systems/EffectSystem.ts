@@ -1,11 +1,19 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
 
 export class EffectSystem {
   constructor(private readonly scene: Phaser.Scene) {}
 
   createBackdrop(): void {
-    this.scene.add.rectangle(195, 422, 390, 844, 0x0b0a10);
+    if (this.scene.textures.exists(IMAGE_ASSETS.BACKGROUND_STAGE_01.key)) {
+      this.scene.add
+        .image(195, 422, IMAGE_ASSETS.BACKGROUND_STAGE_01.key)
+        .setDisplaySize(390, 844);
+    } else {
+      this.scene.add.rectangle(195, 422, 390, 844, 0x0b0a10);
+    }
+
     this.scene.add.rectangle(195, balanceConfig.world.defenseLineY + 4, 390, 6, 0xc94d4d, 0.85);
     this.scene.add.text(16, balanceConfig.world.defenseLineY + 12, "DEFENSE LINE", {
       fontFamily: "monospace",
@@ -36,6 +44,22 @@ export class EffectSystem {
   }
 
   createBurstEffect(x: number, y: number): void {
+    if (this.scene.textures.exists(IMAGE_ASSETS.BURST_EFFECT.key)) {
+      const effectImage = this.scene.add
+        .image(x, y, IMAGE_ASSETS.BURST_EFFECT.key)
+        .setDisplaySize(160, 160)
+        .setDepth(800);
+      this.scene.tweens.add({
+        targets: effectImage,
+        alpha: 0,
+        scaleX: 4.6,
+        scaleY: 4.6,
+        duration: balanceConfig.burst.effectDuration,
+        ease: "Quad.easeOut",
+        onComplete: () => effectImage.destroy(),
+      });
+    }
+
     const effect = this.scene.add.graphics({ x, y });
     effect.fillStyle(0x9ad7ff, 0.18);
     effect.lineStyle(5, 0xcdf4ff, 0.86);
@@ -93,6 +117,23 @@ export class EffectSystem {
   }
 
   createMonsterDefeatEffect(x: number, y: number): void {
+    if (this.scene.textures.exists(IMAGE_ASSETS.KILL_BURST.key)) {
+      const killImage = this.scene.add
+        .image(x, y, IMAGE_ASSETS.KILL_BURST.key)
+        .setDisplaySize(56, 56)
+        .setDepth(620);
+      this.scene.tweens.add({
+        targets: killImage,
+        alpha: 0,
+        scaleX: 1.8,
+        scaleY: 1.8,
+        duration: 220,
+        ease: "Quad.easeOut",
+        onComplete: () => killImage.destroy(),
+      });
+      return;
+    }
+
     const burst = this.scene.add.graphics({ x, y }).setDepth(620);
     burst.fillStyle(0xf4e36f, 0.38);
     burst.fillCircle(0, 0, 28);

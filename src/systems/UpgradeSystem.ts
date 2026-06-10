@@ -17,6 +17,7 @@ export type UpgradeDefinition = {
   category: UpgradeCategory;
   title: string;
   description: string;
+  iconKey?: string;
 };
 
 export type RunUpgradeState = Record<UpgradeId, number>;

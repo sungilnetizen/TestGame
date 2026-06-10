@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
 
 export class Player extends Phaser.GameObjects.Container {
   private readonly bodyBox: Phaser.GameObjects.Rectangle;
@@ -18,10 +19,19 @@ export class Player extends Phaser.GameObjects.Container {
       balanceConfig.player.height,
       0x5fd0ff,
     );
-    const helm = scene.add.rectangle(0, -25, 22, 10, 0xf3d88b);
-    const blade = scene.add.rectangle(20, -10, 5, 42, 0xe9edf6);
 
-    this.add([blade, this.bodyBox, helm]);
+    if (scene.textures.exists(IMAGE_ASSETS.PLAYER_IDLE.key)) {
+      const sprite = scene.add
+        .image(0, -4, IMAGE_ASSETS.PLAYER_IDLE.key)
+        .setDisplaySize(balanceConfig.player.width * 1.8, balanceConfig.player.height * 1.7);
+      this.bodyBox.setVisible(false);
+      this.add([sprite, this.bodyBox]);
+    } else {
+      const helm = scene.add.rectangle(0, -25, 22, 10, 0xf3d88b);
+      const blade = scene.add.rectangle(20, -10, 5, 42, 0xe9edf6);
+      this.add([blade, this.bodyBox, helm]);
+    }
+
     scene.add.existing(this);
   }
 

@@ -91,6 +91,6 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    restartButton.on("pointerdown", () => this.scene.start("GameScene"));
+    restartButton.on("pointerdown", () => this.scene.start("GameScene", { autoStart: true }));
   }
 }

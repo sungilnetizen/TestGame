@@ -1,5 +1,6 @@
 export const enemyDefinitions = {
   small: {
+    assetKey: "enemy_small",
     hpMultiplier: 0.62,
     speedMultiplier: 1.14,
     radius: 24,
@@ -8,6 +9,7 @@ export const enemyDefinitions = {
     shape: "circle",
   },
   normal: {
+    assetKey: "enemy_basic",
     hpMultiplier: 1,
     speedMultiplier: 1,
     radius: 34,
@@ -16,6 +18,7 @@ export const enemyDefinitions = {
     shape: "circle",
   },
   tank: {
+    assetKey: "enemy_tank",
     hpMultiplier: 1.75,
     speedMultiplier: 0.78,
     radius: 44,
@@ -24,6 +27,7 @@ export const enemyDefinitions = {
     shape: "circle",
   },
   swift: {
+    assetKey: "enemy_fast",
     hpMultiplier: 0.82,
     speedMultiplier: 1.36,
     radius: 28,
@@ -32,6 +36,7 @@ export const enemyDefinitions = {
     shape: "diamond",
   },
   brute: {
+    assetKey: "enemy_brute",
     hpMultiplier: 2.45,
     speedMultiplier: 0.72,
     radius: 50,
@@ -40,6 +45,7 @@ export const enemyDefinitions = {
     shape: "square",
   },
   orb: {
+    assetKey: "enemy_orb",
     hpMultiplier: 1.22,
     speedMultiplier: 1.08,
     radius: 32,
