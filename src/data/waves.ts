@@ -20,13 +20,13 @@ export const createWaveConfigs = (): WaveConfig[] =>
 
     return {
       wave,
-      killsToNext: wave <= 5 ? [20, 35, 50, 70, 100][index] : 100 + lateWave * 28,
+      killsToNext: Math.round((wave <= 5 ? [20, 35, 50, 70, 100][index] : 100 + lateWave * 28) * 1.5),
       monsterHp: 24 + wave * 14,
       fallSpeed: 88 + wave * 7,
       spawnInterval: Math.max(240, 880 - wave * 30),
-      maxAlive: Math.min(34, 6 + Math.floor(wave * 1.1)),
-      groupMin: Math.min(10, 1 + Math.floor(wave / 1.7)),
-      groupMax: Math.min(14, 3 + Math.floor(wave / 1.45)),
+      maxAlive: Math.min(51, Math.round((6 + Math.floor(wave * 1.1)) * 1.5)),
+      groupMin: Math.min(15, Math.round((1 + Math.floor(wave / 1.7)) * 1.5)),
+      groupMax: Math.min(21, Math.round((3 + Math.floor(wave / 1.45)) * 1.5)),
       groupSpread: Math.min(68, 20 + wave * 1.6),
       monsterWeights: {
         small: Math.max(6, 44 - wave * 1.25),

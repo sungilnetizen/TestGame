@@ -4,7 +4,9 @@ import { balanceConfig } from "../config/balanceConfig";
 export class Hud {
   private readonly waveText: Phaser.GameObjects.Text;
   private readonly scoreText: Phaser.GameObjects.Text;
-  private readonly comboText: Phaser.GameObjects.Text;
+  private readonly comboContainer: Phaser.GameObjects.Container;
+  private readonly comboNumberText: Phaser.GameObjects.Text;
+  private readonly comboLabelText: Phaser.GameObjects.Text;
   private readonly lifeText: Phaser.GameObjects.Text;
   private readonly burstText: Phaser.GameObjects.Text;
   private readonly scene: Phaser.Scene;
@@ -15,25 +17,45 @@ export class Hud {
     this.scene = scene;
     const style: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: "monospace",
-      fontSize: "15px",
+      fontSize: "18px",
       color: "#f4efe2",
+      stroke: "#1d1720",
+      strokeThickness: 3,
     };
 
-    this.waveText = scene.add.text(16, 16, "Wave 1", style);
-    this.scoreText = scene.add.text(16, 39, "Score 0", style);
-    this.comboText = scene.add
-      .text(balanceConfig.world.width / 2, 210, "Combo 0", {
+    this.waveText = scene.add.text(16, 14, "Wave 1", style).setShadow(0, 2, "#100b10", 4, true, true);
+    this.scoreText = scene.add.text(16, 40, "Score 0", style).setShadow(0, 2, "#100b10", 4, true, true);
+    this.comboNumberText = scene.add
+      .text(0, 0, "0", {
         ...style,
-        fontSize: "28px",
+        fontSize: "34px",
         color: "#fff1a8",
         stroke: "#37221d",
         strokeThickness: 4,
       })
-      .setOrigin(0.5, 0)
+      .setOrigin(0.5, 0.5)
+      .setShadow(0, 3, "#2d1b12", 5, true, true);
+    this.comboLabelText = scene.add
+      .text(0, 31, "COMBO", {
+        ...style,
+        fontSize: "18px",
+        color: "#ffd35a",
+        stroke: "#37221d",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5, 0.5)
+      .setShadow(0, 2, "#2d1b12", 4, true, true);
+    this.comboContainer = scene.add
+      .container(346, 198, [this.comboNumberText, this.comboLabelText])
       .setAlpha(0)
       .setScale(0.7)
       .setDepth(1000);
-    this.lifeText = scene.add.text(155, 39, `Life ${balanceConfig.run.startingLife}`, style);
+    this.lifeText = scene.add.text(16, 66, this.createLifeLabel(balanceConfig.run.startingLife), {
+      ...style,
+      color: "#ff5a6f",
+      stroke: "#351017",
+      strokeThickness: 4,
+    }).setShadow(0, 2, "#16080c", 4, true, true);
     this.burstText = scene.add.text(276, 16, "Burst Ready", {
       ...style,
       fontSize: "13px",
@@ -42,7 +64,7 @@ export class Hud {
   }
 
   setLife(life: number): void {
-    this.lifeText.setText(`Life ${life}`);
+    this.lifeText.setText(this.createLifeLabel(life));
   }
 
   setScore(score: number): void {
@@ -59,12 +81,12 @@ export class Hud {
       return;
     }
 
-    this.comboText.setText(`Combo ${combo}`);
+    this.comboNumberText.setText(`${combo}`);
     this.comboFadeTween?.stop();
     this.comboPopTween?.stop();
-    this.comboText.setAlpha(1).setDepth(1000);
+    this.comboContainer.setAlpha(1).setDepth(1000);
     this.comboPopTween = this.scene.tweens.add({
-      targets: this.comboText,
+      targets: this.comboContainer,
       scaleX: { from: 1.38, to: 1 },
       scaleY: { from: 1.38, to: 1 },
       duration: 170,
@@ -91,12 +113,16 @@ export class Hud {
     this.comboPopTween?.stop();
     this.comboFadeTween?.stop();
     this.comboFadeTween = this.scene.tweens.add({
-      targets: this.comboText,
+      targets: this.comboContainer,
       alpha: 0,
       scaleX: 0.78,
       scaleY: 0.78,
       duration: 650,
       ease: "Sine.easeOut",
     });
+  }
+
+  private createLifeLabel(life: number): string {
+    return Array.from({ length: Math.max(0, life) }, () => "♥").join(" ");
   }
 }

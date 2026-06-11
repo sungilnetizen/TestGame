@@ -120,26 +120,62 @@ export class AttackSystem {
   ): void {
     const attackArcStart = 270 - attackArcDegrees / 2;
     const attackArcEnd = 270 + attackArcDegrees / 2;
+    const slashRange = this.createSlashRange(
+      attackCenterX,
+      attackCenterY,
+      attackRadius,
+      attackArcStart,
+      attackArcEnd,
+      upgradeState,
+    );
 
     if (this.scene.textures.exists(IMAGE_ASSETS.SLASH_BASIC.key)) {
       const slashImage = this.scene.add
         .image(attackCenterX, attackCenterY, IMAGE_ASSETS.SLASH_BASIC.key)
         .setDisplaySize(attackRadius * 2, attackRadius * 2)
-        .setDepth(650);
+        .setDepth(431);
+      const maskGraphics = this.createSlashMask(
+        attackCenterX,
+        attackCenterY,
+        attackRadius,
+        attackArcStart,
+        attackArcEnd,
+      );
+      const mask = maskGraphics.createGeometryMask();
+      slashImage.setMask(mask);
+
       this.scene.tweens.add({
-        targets: slashImage,
+        targets: [slashImage, slashRange],
         alpha: 0,
-        scaleX: upgradeState.giantSword > 0 ? 1.28 : 1.1,
-        scaleY: upgradeState.giantSword > 0 ? 1.28 : 1.1,
         duration: balanceConfig.combat.slashDuration,
-        onComplete: () => slashImage.destroy(),
+        onComplete: () => {
+          slashImage.destroy();
+          slashRange.destroy();
+          maskGraphics.destroy();
+        },
       });
       return;
     }
 
-    const slash = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY });
-    slash.fillStyle(upgradeState.fireSword > 0 ? 0xff6236 : 0xffe071, 0.32);
-    slash.lineStyle(5, upgradeState.fireSword > 0 ? 0xffb15c : 0xfff6b0, 0.94);
+    this.scene.tweens.add({
+      targets: slashRange,
+      alpha: 0,
+      duration: balanceConfig.combat.slashDuration,
+      onComplete: () => slashRange.destroy(),
+    });
+  }
+
+  private createSlashRange(
+    attackCenterX: number,
+    attackCenterY: number,
+    attackRadius: number,
+    attackArcStart: number,
+    attackArcEnd: number,
+    upgradeState: RunUpgradeState,
+  ): Phaser.GameObjects.Graphics {
+    const slash = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY }).setDepth(430);
+    slash.fillStyle(upgradeState.fireSword > 0 ? 0xff6236 : 0xffe071, 0.2);
+    slash.lineStyle(4, upgradeState.fireSword > 0 ? 0xffb15c : 0xfff6b0, 0.78);
     slash.beginPath();
     slash.moveTo(0, 0);
 
@@ -155,14 +191,33 @@ export class AttackSystem {
     slash.fillPath();
     slash.strokePath();
 
-    this.scene.tweens.add({
-      targets: slash,
-      alpha: 0,
-      scaleX: upgradeState.giantSword > 0 ? 1.28 : 1.1,
-      scaleY: upgradeState.giantSword > 0 ? 1.28 : 1.1,
-      duration: balanceConfig.combat.slashDuration,
-      onComplete: () => slash.destroy(),
-    });
+    return slash;
+  }
+
+  private createSlashMask(
+    attackCenterX: number,
+    attackCenterY: number,
+    attackRadius: number,
+    attackArcStart: number,
+    attackArcEnd: number,
+  ): Phaser.GameObjects.Graphics {
+    const maskGraphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
+    maskGraphics.fillStyle(0xffffff, 1);
+    maskGraphics.beginPath();
+    maskGraphics.moveTo(attackCenterX, attackCenterY);
+
+    for (let angle = attackArcStart; angle <= attackArcEnd; angle += 8) {
+      const radians = Phaser.Math.DegToRad(angle);
+      maskGraphics.lineTo(
+        attackCenterX + Math.cos(radians) * attackRadius,
+        attackCenterY + Math.sin(radians) * attackRadius,
+      );
+    }
+
+    maskGraphics.closePath();
+    maskGraphics.fillPath();
+
+    return maskGraphics;
   }
 
   private applyBurn(monster: Monster, attackDamageMultiplier: number, options: AttackOptions): void {

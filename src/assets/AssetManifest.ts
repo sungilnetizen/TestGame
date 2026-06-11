@@ -56,6 +56,42 @@ export const IMAGE_ASSETS = {
     key: "upgrade_card_bg",
     path: "assets/images/ui/upgrade_card_bg.png",
   },
+  UPGRADE_CARD_ATTACK: {
+    key: "upgrade_card_attack",
+    path: "assets/images/ui/upgrade_card_attack.png",
+  },
+  UPGRADE_CARD_BURST: {
+    key: "upgrade_card_burst",
+    path: "assets/images/ui/upgrade_card_burst.png",
+  },
+  BUTTON_PRIMARY: {
+    key: "button_primary",
+    path: "assets/images/ui/button_primary.png",
+  },
+  BUTTON_SECONDARY: {
+    key: "button_secondary",
+    path: "assets/images/ui/button_secondary.png",
+  },
+  BUTTON_DANGER: {
+    key: "button_danger",
+    path: "assets/images/ui/button_danger.png",
+  },
+  BUTTON_TOUCH_JUMP: {
+    key: "button_touch_jump",
+    path: "assets/images/ui/button_touch_jump.png",
+  },
+  BUTTON_TOUCH_ATTACK: {
+    key: "button_touch_attack",
+    path: "assets/images/ui/button_touch_attack.png",
+  },
+  BUTTON_TOUCH_BURST: {
+    key: "button_touch_burst",
+    path: "assets/images/ui/button_touch_burst.png",
+  },
+  BUTTON_PAUSE: {
+    key: "button_pause",
+    path: "assets/images/ui/button_pause.png",
+  },
   UPGRADE_FIRE_SWORD: {
     key: "upgrade_fire_sword",
     path: "assets/images/upgrades/fire_sword.png",

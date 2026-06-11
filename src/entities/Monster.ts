@@ -21,6 +21,7 @@ export class Monster extends Phaser.GameObjects.Container {
   readonly radius: number;
   readonly scoreValue: number;
   private readonly core: Phaser.GameObjects.Shape;
+  private readonly collisionDebugBox: Phaser.GameObjects.Rectangle;
   private readonly baseColor: number;
   private readonly fallSpeed: number;
   private hp: number = balanceConfig.monster.maxHp;
@@ -42,6 +43,9 @@ export class Monster extends Phaser.GameObjects.Container {
     this.hp = options.hp ?? balanceConfig.monster.maxHp;
     this.fallSpeed = (options.fallSpeed ?? balanceConfig.monster.fallSpeed) + Phaser.Math.Between(-12, 18);
     this.core = this.createCore(scene, typeConfig.shape, typeConfig.color);
+    this.collisionDebugBox = scene.add
+      .rectangle(0, 0, this.radius * 2, this.radius * 2, 0xff3d3d, 0.06)
+      .setStrokeStyle(2, 0xff3d3d, 0.38);
     const eye = scene.add.rectangle(0, -3, 18, 5, 0xf8f1ff);
 
     if (scene.textures.exists(typeConfig.assetKey)) {
@@ -50,9 +54,9 @@ export class Monster extends Phaser.GameObjects.Container {
         .setDisplaySize(this.radius * 2, this.radius * 2);
       this.core.setVisible(false);
       eye.setVisible(false);
-      this.add([sprite, this.core, eye]);
+      this.add([sprite, this.core, eye, this.collisionDebugBox]);
     } else {
-      this.add([this.core, eye]);
+      this.add([this.core, eye, this.collisionDebugBox]);
     }
 
     scene.add.existing(this);

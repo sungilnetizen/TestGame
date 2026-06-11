@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
+
+type ButtonBody = Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image;
 
 type PauseMenuOptions = {
   soundEnabled: boolean;
@@ -42,12 +45,12 @@ export class PauseMenu {
       })
       .setOrigin(0.5);
 
-    const resume = this.createButton(195, 284, "RESUME", 0x2e6658, options.onResume);
-    const sound = this.createButton(195, 350, this.soundLabel(options.soundEnabled), 0x38475c, options.onToggleSound);
+    const resume = this.createButton(195, 284, "RESUME", 0x2e6658, IMAGE_ASSETS.BUTTON_PRIMARY.key, options.onResume);
+    const sound = this.createButton(195, 350, this.soundLabel(options.soundEnabled), 0x38475c, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onToggleSound);
     this.soundText = sound.text;
-    const shop = this.createButton(195, 416, "SHOP", 0x59428e, options.onOpenShop);
-    const restart = this.createButton(195, 482, "RESTART", 0x70512b, options.onRestart);
-    const quit = this.createButton(195, 548, "QUIT TO TITLE", 0x733535, options.onQuitToTitle);
+    const shop = this.createButton(195, 416, "SHOP", 0x59428e, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onOpenShop);
+    const restart = this.createButton(195, 482, "RESTART", 0x70512b, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onRestart);
+    const quit = this.createButton(195, 548, "QUIT TO TITLE", 0x733535, IMAGE_ASSETS.BUTTON_DANGER.key, options.onQuitToTitle);
 
     container.add([
       backdrop,
@@ -84,12 +87,10 @@ export class PauseMenu {
     y: number,
     label: string,
     color: number,
+    assetKey: string,
     callback: () => void,
-  ): { button: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text } {
-    const button = this.scene.add
-      .rectangle(x, y, 218, 50, color, 0.96)
-      .setStrokeStyle(2, 0xf4efe2, 0.78)
-      .setInteractive({ useHandCursor: true });
+  ): { button: ButtonBody; text: Phaser.GameObjects.Text } {
+    const button = this.createButtonBody(x, y, 218, 50, color, assetKey);
     const text = this.scene.add
       .text(x, y, label, {
         fontFamily: "monospace",
@@ -101,6 +102,27 @@ export class PauseMenu {
     button.on("pointerdown", callback);
 
     return { button, text };
+  }
+
+  private createButtonBody(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+    assetKey: string,
+  ): ButtonBody {
+    if (this.scene.textures.exists(assetKey)) {
+      return this.scene.add
+        .image(x, y, assetKey)
+        .setDisplaySize(width, height)
+        .setInteractive({ useHandCursor: true });
+    }
+
+    return this.scene.add
+      .rectangle(x, y, width, height, color, 0.96)
+      .setStrokeStyle(2, 0xf4efe2, 0.78)
+      .setInteractive({ useHandCursor: true });
   }
 
   private soundLabel(enabled: boolean): string {

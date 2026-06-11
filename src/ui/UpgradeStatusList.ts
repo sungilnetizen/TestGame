@@ -51,8 +51,8 @@ export class UpgradeStatusList {
       const col = index % this.options.columns;
       const row = Math.floor(index / this.options.columns);
       const item = this.createItem(
-        col * (this.options.compact ? 150 : 170),
-        row * (this.options.compact ? 28 : 34),
+        col * (this.options.compact ? 102 : 170),
+        row * (this.options.compact ? 40 : 34),
         upgrade,
         state[upgrade.id],
       );
@@ -71,24 +71,42 @@ export class UpgradeStatusList {
     level: number,
   ): Phaser.GameObjects.Container {
     const item = this.scene.add.container(x, y);
-    const iconSize = this.options.compact ? 18 : 22;
+    const iconSize = this.options.compact ? 31 : 22;
     const iconColor = upgrade.category === "Attack" ? 0xffe071 : 0x9ad7ff;
-    const icon = this.scene.add
-      .rectangle(0, 0, iconSize, iconSize, 0x161d27, 0.94)
-      .setStrokeStyle(2, iconColor, 0.9)
-      .setOrigin(0, 0);
-    const name = this.scene.add.text(iconSize + 7, -1, upgrade.title, {
+    const icon = this.createIcon(upgrade, iconSize, iconColor);
+    const name = this.scene.add.text(iconSize + 8, 0, upgrade.title, {
       fontFamily: "monospace",
-      fontSize: this.options.compact ? "10px" : "12px",
+      fontSize: this.options.compact ? "13px" : "12px",
       color: "#f4efe2",
-    });
-    const levelText = this.scene.add.text(iconSize + 7, this.options.compact ? 12 : 15, `Lv ${level}`, {
+      stroke: "#17121a",
+      strokeThickness: this.options.compact ? 1 : 2,
+    }).setShadow(0, 1, "#0c080d", 2, false, true);
+    const levelText = this.scene.add.text(iconSize + 8, this.options.compact ? 19 : 15, `Lv ${level}`, {
       fontFamily: "monospace",
-      fontSize: this.options.compact ? "9px" : "10px",
+      fontSize: this.options.compact ? "11px" : "10px",
       color: "#fff1a8",
-    });
+      stroke: "#2b1c16",
+      strokeThickness: 1,
+    }).setShadow(0, 1, "#120b08", 2, false, true);
 
     item.add([icon, name, levelText]);
     return item;
+  }
+
+  private createIcon(
+    upgrade: UpgradeDefinition,
+    iconSize: number,
+    iconColor: number,
+  ): Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle {
+    if (upgrade.iconKey && this.scene.textures.exists(upgrade.iconKey)) {
+      return this.scene.add
+        .image(iconSize / 2, iconSize / 2, upgrade.iconKey)
+        .setDisplaySize(iconSize, iconSize);
+    }
+
+    return this.scene.add
+      .rectangle(0, 0, iconSize, iconSize, 0x161d27, 0.94)
+      .setStrokeStyle(2, iconColor, 0.9)
+      .setOrigin(0, 0);
   }
 }

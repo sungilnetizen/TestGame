@@ -55,16 +55,16 @@ export class UpgradeScreen {
     });
 
     const statusTitle = this.scene.add
-      .text(38, 596, "Current Upgrades", {
+      .text(48, 596, "Current Upgrades", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: "#cdf4ff",
       })
       .setOrigin(0, 0.5);
     const statusList = new UpgradeStatusList(this.scene, this.upgradeSystem.getAllUpgrades(), {
-      x: 38,
+      x: 48,
       y: 622,
-      columns: 2,
+      columns: 3,
       maxItems: 8,
       compact: true,
     }).setDepth(1201);
@@ -85,45 +85,33 @@ export class UpgradeScreen {
   ): Phaser.GameObjects.Container {
     const card = this.scene.add.container(x, y).setScale(0.94);
     const panel = this.createCardPanel(upgrade);
-    const icon = this.createUpgradeIcon(upgrade);
-    const category = this.scene.add
-      .text(-138, -37, upgrade.category, {
-        fontFamily: "monospace",
-        fontSize: "12px",
-        color: upgrade.category === "Attack" ? "#ffe071" : "#9ad7ff",
-      })
-      .setOrigin(0, 0.5);
+    const icon = this.createUpgradeIcon(upgrade, upgrade.category);
     const title = this.scene.add
-      .text(-138, -12, upgrade.title, {
+      .text(-54, -12, upgrade.title, {
         fontFamily: "monospace",
-        fontSize: "20px",
+        fontSize: "19px",
         color: "#f8f1ff",
       })
       .setOrigin(0, 0.5);
     const description = this.scene.add
-      .text(-138, 20, upgrade.description, {
+      .text(-54, 13, upgrade.description, {
         fontFamily: "monospace",
-        fontSize: "14px",
+        fontSize: "13px",
         color: "#c9d2e3",
       })
       .setOrigin(0, 0.5);
     const currentLevel = options.state[upgrade.id];
     const levelText = this.scene.add
-      .text(138, -37, `Lv ${currentLevel} > ${Math.min(maxUpgradeLevel, currentLevel + 1)}`, {
+      .text(140, -35, this.createLevelLabel(currentLevel), {
         fontFamily: "monospace",
-        fontSize: "12px",
+        fontSize: "15px",
         color: currentLevel >= maxUpgradeLevel ? "#9a8f9e" : "#fff1a8",
-      })
-      .setOrigin(1, 0.5);
-    const maxText = this.scene.add
-      .text(138, 37, `MAX ${maxUpgradeLevel}`, {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#8f9bad",
+        stroke: "#2b1c16",
+        strokeThickness: 3,
       })
       .setOrigin(1, 0.5);
 
-    card.add(icon ? [panel, icon, category, title, description, levelText, maxText] : [panel, category, title, description, levelText, maxText]);
+    card.add([panel, icon, title, description, levelText]);
 
     panel.on("pointerover", () => card.setScale(1));
     panel.on("pointerout", () => card.setScale(0.94));
@@ -141,9 +129,15 @@ export class UpgradeScreen {
   }
 
   private createCardPanel(upgrade: UpgradeDefinition): Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle {
-    if (this.scene.textures.exists(IMAGE_ASSETS.UPGRADE_CARD_BG.key)) {
+    const categoryCardAsset =
+      upgrade.category === "Attack" ? IMAGE_ASSETS.UPGRADE_CARD_ATTACK : IMAGE_ASSETS.UPGRADE_CARD_BURST;
+    const cardAsset = this.scene.textures.exists(categoryCardAsset.key)
+      ? categoryCardAsset
+      : IMAGE_ASSETS.UPGRADE_CARD_BG;
+
+    if (this.scene.textures.exists(cardAsset.key)) {
       return this.scene.add
-        .image(0, 0, IMAGE_ASSETS.UPGRADE_CARD_BG.key)
+        .image(0, 0, cardAsset.key)
         .setDisplaySize(318, 104)
         .setInteractive({ useHandCursor: true });
     }
@@ -154,11 +148,24 @@ export class UpgradeScreen {
       .setInteractive({ useHandCursor: true });
   }
 
-  private createUpgradeIcon(upgrade: UpgradeDefinition): Phaser.GameObjects.Image | undefined {
-    if (!upgrade.iconKey || !this.scene.textures.exists(upgrade.iconKey)) return undefined;
+  private createUpgradeIcon(
+    upgrade: UpgradeDefinition,
+    category: UpgradeDefinition["category"],
+  ): Phaser.GameObjects.Image | Phaser.GameObjects.Ellipse {
+    if (!upgrade.iconKey || !this.scene.textures.exists(upgrade.iconKey)) {
+      return this.scene.add
+        .ellipse(-106, 0, 68, 68, category === "Attack" ? 0xffe071 : 0x9ad7ff, 0.22)
+        .setStrokeStyle(2, category === "Attack" ? 0xffe071 : 0x9ad7ff, 0.72);
+    }
 
     return this.scene.add
-      .image(-116, 0, upgrade.iconKey)
-      .setDisplaySize(38, 38);
+      .image(-106, 0, upgrade.iconKey)
+      .setDisplaySize(68, 68);
+  }
+
+  private createLevelLabel(currentLevel: number): string {
+    if (currentLevel >= maxUpgradeLevel) return "MAX";
+
+    return `Lv ${currentLevel} > ${Math.min(maxUpgradeLevel, currentLevel + 1)}`;
   }
 }

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
+
+type ButtonBody = Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image;
 
 type ShopScreenOptions = {
   gold: number;
@@ -92,11 +95,8 @@ export class ShopScreen {
     label: string,
     color: number,
     callback: () => void,
-  ): { button: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text } {
-    const button = this.scene.add
-      .rectangle(x, y, 176, 52, color, 0.96)
-      .setStrokeStyle(2, 0xf4efe2, 0.78)
-      .setInteractive({ useHandCursor: true });
+  ): { button: ButtonBody; text: Phaser.GameObjects.Text } {
+    const button = this.createButtonBody(x, y, 176, 52, color);
     const text = this.scene.add
       .text(x, y, label, {
         fontFamily: "monospace",
@@ -108,5 +108,25 @@ export class ShopScreen {
     button.on("pointerdown", callback);
 
     return { button, text };
+  }
+
+  private createButtonBody(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+  ): ButtonBody {
+    if (this.scene.textures.exists(IMAGE_ASSETS.BUTTON_PRIMARY.key)) {
+      return this.scene.add
+        .image(x, y, IMAGE_ASSETS.BUTTON_PRIMARY.key)
+        .setDisplaySize(width, height)
+        .setInteractive({ useHandCursor: true });
+    }
+
+    return this.scene.add
+      .rectangle(x, y, width, height, color, 0.96)
+      .setStrokeStyle(2, 0xf4efe2, 0.78)
+      .setInteractive({ useHandCursor: true });
   }
 }

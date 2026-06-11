@@ -22,7 +22,7 @@ import { GameStateSystem } from "../systems/GameStateSystem";
 import { ScoreState, ScoreSystem } from "../systems/ScoreSystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { AssetLoader } from "../systems/AssetLoader";
-import { SOUND_ASSETS } from "../assets/AssetManifest";
+import { IMAGE_ASSETS, SOUND_ASSETS } from "../assets/AssetManifest";
 import {
   defaultRunUpgradeState,
   RunUpgradeState,
@@ -58,7 +58,7 @@ export class GameScene extends Phaser.Scene {
   private runRecordSystem = new RunRecordSystem();
   private gameStateSystem = new GameStateSystem();
   private shopReturnTarget: "title" | "pause" = "title";
-  private pauseButton?: Phaser.GameObjects.Rectangle;
+  private pauseButton?: Phaser.GameObjects.Arc | Phaser.GameObjects.Image;
   private pauseButtonText?: Phaser.GameObjects.Text;
 
   constructor() {
@@ -112,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     if (this.gameStateSystem.blocksGameplay()) return;
 
     this.player.updatePlayer(delta);
+    this.effectSystem.updateBackdropForPlayer(this.player.y, delta, this.player.isGrounded());
 
     this.enemySystem.spawnMonsters(time);
     this.enemySystem.updateMonsters(delta);
@@ -164,22 +165,43 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPauseButton(): void {
-    this.pauseButton = this.add
-      .rectangle(346, 48, 66, 34, 0x38475c, 0.92)
+    this.pauseButton = this.createPauseButtonBody();
+
+    this.pauseButton.on("pointerdown", () => this.pauseGame());
+    this.setPauseButtonVisible(false);
+  }
+
+  private createPauseButtonBody(): Phaser.GameObjects.Arc | Phaser.GameObjects.Image {
+    const x = 346;
+    const y = 48;
+    const radius = 23;
+
+    if (this.textures.exists(IMAGE_ASSETS.BUTTON_PAUSE.key)) {
+      return this.add
+        .image(x, y, IMAGE_ASSETS.BUTTON_PAUSE.key)
+        .setDisplaySize(radius * 2, radius * 2)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(950);
+    }
+
+    const fallbackButton = this.add
+      .circle(x, y, radius, 0x38475c, 0.92)
       .setStrokeStyle(2, 0xf4efe2, 0.72)
       .setInteractive({ useHandCursor: true })
       .setDepth(950);
+
     this.pauseButtonText = this.add
-      .text(346, 48, "Pause", {
+      .text(x, y, "Pause", {
         fontFamily: "monospace",
-        fontSize: "12px",
+        fontSize: "10px",
         color: "#fff8df",
+        stroke: "#1d1720",
+        strokeThickness: 2,
       })
       .setOrigin(0.5)
       .setDepth(951);
 
-    this.pauseButton.on("pointerdown", () => this.pauseGame());
-    this.setPauseButtonVisible(false);
+    return fallbackButton;
   }
 
   private startNewGame(): void {
@@ -313,8 +335,13 @@ export class GameScene extends Phaser.Scene {
 
   private resolvePlayerMonsterCollision(): void {
     for (const monster of this.enemySystem.getMonsters()) {
+      if (CollisionSystem.groundedPlayerHitsEnemy(this.player, monster)) {
+        this.loseLifeFromEnemy();
+        return;
+      }
+
       if (CollisionSystem.playerHitsEnemy(this.player, monster)) {
-      this.player.forceFall();
+        this.player.forceFall();
         this.resetCombo();
         return;
       }
@@ -323,22 +350,27 @@ export class GameScene extends Phaser.Scene {
 
   private resolveDefenseLine(): void {
     const didLoseLife = this.enemySystem.getMonsters().some(
-      (monster) => CollisionSystem.enemyReachedBottom(monster),
+      (monster) => CollisionSystem.enemyReachedBottom(monster, this.effectSystem.getDefenseLineY()),
     );
 
     if (didLoseLife) {
-      this.life -= 1;
-      const scoreState = this.scoreSystem.subtractScore(25);
-      this.hud.setLife(this.life);
-      this.hud.setScore(scoreState.score);
-      this.resetCombo();
-      this.clearMonsters();
-      this.cameras.main.shake(160, 0.009);
+      this.loseLifeFromEnemy();
     }
 
     if (this.life <= 0) {
       this.showGameOver();
     }
+  }
+
+  private loseLifeFromEnemy(): void {
+    this.life -= 1;
+    this.player.flashHit();
+    const scoreState = this.scoreSystem.subtractScore(25);
+    this.hud.setLife(this.life);
+    this.hud.setScore(scoreState.score);
+    this.resetCombo();
+    this.clearMonsters();
+    this.cameras.main.shake(160, 0.009);
   }
 
   private recordMonsterKill(): void {

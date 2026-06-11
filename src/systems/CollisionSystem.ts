@@ -4,6 +4,10 @@ import type { Monster } from "../entities/Monster";
 import type { Player } from "../entities/Player";
 
 export class CollisionSystem {
+  static rectsOverlap(a: Phaser.Geom.Rectangle, b: Phaser.Geom.Rectangle): boolean {
+    return Phaser.Geom.Intersects.RectangleToRectangle(a, b);
+  }
+
   static attackHitsEnemy(
     attackCenterX: number,
     attackCenterY: number,
@@ -22,13 +26,39 @@ export class CollisionSystem {
   }
 
   static playerHitsEnemy(player: Player, monster: Monster): boolean {
-    const playerCollisionRadius = Math.max(balanceConfig.player.width, balanceConfig.player.height) / 2;
-    const distance = Phaser.Math.Distance.Between(player.x, player.y, monster.x, monster.y);
-
-    return distance <= playerCollisionRadius + monster.radius;
+    return this.rectsOverlap(
+      this.getPlayerHitbox(player),
+      this.getMonsterHitbox(monster),
+    );
   }
 
-  static enemyReachedBottom(monster: Monster): boolean {
-    return monster.y + monster.radius >= balanceConfig.world.defenseLineY;
+  static groundedPlayerHitsEnemy(player: Player, monster: Monster): boolean {
+    return player.isGrounded() && this.playerHitsEnemy(player, monster);
+  }
+
+  static enemyReachedBottom(monster: Monster, defenseLineY = this.getDefenseLineY()): boolean {
+    return monster.y + monster.radius >= defenseLineY;
+  }
+
+  static getDefenseLineY(): number {
+    return balanceConfig.player.startY - balanceConfig.player.height / 2 + balanceConfig.player.height / 3;
+  }
+
+  static getPlayerHitbox(player: Player): Phaser.Geom.Rectangle {
+    return new Phaser.Geom.Rectangle(
+      player.x - balanceConfig.player.width / 2,
+      player.y - balanceConfig.player.height / 2,
+      balanceConfig.player.width,
+      balanceConfig.player.height,
+    );
+  }
+
+  static getMonsterHitbox(monster: Monster): Phaser.Geom.Rectangle {
+    return new Phaser.Geom.Rectangle(
+      monster.x - monster.radius,
+      monster.y - monster.radius,
+      monster.radius * 2,
+      monster.radius * 2,
+    );
   }
 }

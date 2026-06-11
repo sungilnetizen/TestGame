@@ -1,25 +1,46 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
 import { IMAGE_ASSETS } from "../assets/AssetManifest";
+import { CollisionSystem } from "./CollisionSystem";
 
 export class EffectSystem {
+  private background?: Phaser.GameObjects.Image;
+  private defenseLine?: Phaser.GameObjects.Rectangle;
+  private defenseLineZone?: Phaser.GameObjects.Rectangle;
+  private backgroundBaseY = balanceConfig.world.height / 2;
+  private backgroundTargetY = balanceConfig.world.height / 2;
+
   constructor(private readonly scene: Phaser.Scene) {}
 
   createBackdrop(): void {
     if (this.scene.textures.exists(IMAGE_ASSETS.BACKGROUND_STAGE_01.key)) {
-      this.scene.add
-        .image(195, 422, IMAGE_ASSETS.BACKGROUND_STAGE_01.key)
-        .setDisplaySize(390, 844);
+      this.background = this.scene.add.image(
+        balanceConfig.world.width / 2,
+        balanceConfig.world.height / 2,
+        IMAGE_ASSETS.BACKGROUND_STAGE_01.key,
+      );
+      this.fitTallBackground();
     } else {
       this.scene.add.rectangle(195, 422, 390, 844, 0x0b0a10);
     }
 
-    this.scene.add.rectangle(195, balanceConfig.world.defenseLineY + 4, 390, 6, 0xc94d4d, 0.85);
-    this.scene.add.text(16, balanceConfig.world.defenseLineY + 12, "DEFENSE LINE", {
-      fontFamily: "monospace",
-      fontSize: "12px",
-      color: "#d6b8a2",
-    });
+    const defenseLineY = CollisionSystem.getDefenseLineY();
+    this.defenseLine = this.scene.add.rectangle(
+      balanceConfig.world.width / 2,
+      defenseLineY,
+      balanceConfig.world.width,
+      4,
+      0xff3d3d,
+      0.86,
+    ).setDepth(120);
+    this.defenseLineZone = this.scene.add.rectangle(
+      balanceConfig.world.width / 2,
+      defenseLineY - 10,
+      balanceConfig.world.width,
+      20,
+      0xff3d3d,
+      0.08,
+    ).setDepth(119);
 
     for (let i = 0; i < 40; i += 1) {
       this.scene.add.rectangle(
@@ -31,6 +52,64 @@ export class EffectSystem {
         Phaser.Math.FloatBetween(0.25, 0.7),
       );
     }
+  }
+
+  updateBackdropForPlayer(playerY: number, deltaMs: number, isPlayerGrounded: boolean): void {
+    if (!this.background) return;
+
+    if (isPlayerGrounded) {
+      this.backgroundTargetY = this.backgroundBaseY;
+      if (Math.abs(this.background.y - this.backgroundBaseY) < 1.5) {
+        this.background.y = this.backgroundBaseY;
+      }
+      this.updateDefenseLinePosition();
+      return;
+    }
+
+    const jumpHeight = Phaser.Math.Clamp(balanceConfig.player.startY - playerY, 0, 260);
+    const maxPan = Math.max(0, this.background.displayHeight - balanceConfig.world.height);
+    const targetOffset = Math.min(maxPan, 28, jumpHeight * 0.1);
+    this.backgroundTargetY = this.backgroundBaseY + targetOffset;
+
+    const smoothing = 1 - Math.pow(0.002, deltaMs / 1000);
+    this.background.y = Phaser.Math.Linear(this.background.y, this.backgroundTargetY, smoothing);
+    this.updateDefenseLinePosition();
+  }
+
+  getDefenseLineY(): number {
+    return CollisionSystem.getDefenseLineY() + this.getBackdropOffsetY();
+  }
+
+  private fitTallBackground(): void {
+    if (!this.background) return;
+
+    const source = this.background.texture.getSourceImage() as HTMLImageElement;
+    const sourceWidth = source.width || balanceConfig.world.width;
+    const sourceHeight = source.height || balanceConfig.world.height;
+    const minPanSpace = 80;
+    const scale = Math.max(
+      balanceConfig.world.width / sourceWidth,
+      (balanceConfig.world.height + minPanSpace) / sourceHeight,
+    );
+    const displayWidth = sourceWidth * scale;
+    const displayHeight = sourceHeight * scale;
+
+    this.background.setDisplaySize(displayWidth, displayHeight);
+    this.backgroundBaseY = balanceConfig.world.height - displayHeight / 2;
+    this.backgroundTargetY = this.backgroundBaseY;
+    this.background.setPosition(balanceConfig.world.width / 2, this.backgroundBaseY);
+  }
+
+  private getBackdropOffsetY(): number {
+    if (!this.background) return 0;
+
+    return this.background.y - this.backgroundBaseY;
+  }
+
+  private updateDefenseLinePosition(): void {
+    const defenseLineY = this.getDefenseLineY();
+    this.defenseLine?.setY(defenseLineY);
+    this.defenseLineZone?.setY(defenseLineY - 10);
   }
 
   createBurstEffect(x: number, y: number): void {

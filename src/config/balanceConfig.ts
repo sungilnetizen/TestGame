@@ -2,13 +2,13 @@ export const balanceConfig = {
   world: {
     width: 390,
     height: 844,
-    defenseLineY: 735,
+    defenseLineY: 690,
   },
   player: {
     startX: 195,
-    startY: 700,
-    width: 36,
-    height: 50,
+    startY: 630,
+    width: 45,
+    height: 63,
     gravity: 1900,
     jumpPower: 1160,
   },
@@ -30,7 +30,7 @@ export const balanceConfig = {
     collisionFallSpeed: 520,
   },
   burst: {
-    cooldown: 10000,
+    cooldown: 60000,
     liftVelocity: 360,
     slowMultiplier: 0.2,
     slowDuration: 1600,

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
+
+type ButtonBody = Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image;
 
 type TitleScreenOptions = {
   bestScore: number;
@@ -92,11 +95,8 @@ export class TitleScreen {
     label: string,
     color: number,
     callback: () => void,
-  ): { button: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text } {
-    const button = this.scene.add
-      .rectangle(x, y, 210, 56, color, 0.96)
-      .setStrokeStyle(2, 0xf4efe2, 0.82)
-      .setInteractive({ useHandCursor: true });
+  ): { button: ButtonBody; text: Phaser.GameObjects.Text } {
+    const button = this.createButtonBody(x, y, 210, 56, color, IMAGE_ASSETS.BUTTON_PRIMARY.key);
     const text = this.scene.add
       .text(x, y, label, {
         fontFamily: "monospace",
@@ -108,6 +108,27 @@ export class TitleScreen {
     button.on("pointerdown", callback);
 
     return { button, text };
+  }
+
+  private createButtonBody(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+    assetKey: string,
+  ): ButtonBody {
+    if (this.scene.textures.exists(assetKey)) {
+      return this.scene.add
+        .image(x, y, assetKey)
+        .setDisplaySize(width, height)
+        .setInteractive({ useHandCursor: true });
+    }
+
+    return this.scene.add
+      .rectangle(x, y, width, height, color, 0.96)
+      .setStrokeStyle(2, 0xf4efe2, 0.82)
+      .setInteractive({ useHandCursor: true });
   }
 
   private soundLabel(enabled: boolean): string {
