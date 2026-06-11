@@ -87,6 +87,7 @@ export class GameScene extends Phaser.Scene {
       (action) => this.handleControl(action),
       () => this.togglePause(),
       () => this.toggleDebugVisible(),
+      () => this.jumpToNextBossWave(),
     );
     this.touchControls = new TouchControls(this, (action) => this.handleControl(action));
     this.upgradeStatusList = new UpgradeStatusList(this, this.upgradeSystem.getAllUpgrades(), {
@@ -347,10 +348,35 @@ export class GameScene extends Phaser.Scene {
     this.effectSystem?.setDebugVisible(this.debugVisible);
   }
 
+  private jumpToNextBossWave(): void {
+    if (this.gameStateSystem.blocksGameplay()) return;
+
+    const currentWave = this.waveSystem.currentWaveNumber;
+    const interval = balanceConfig.boss.waveInterval;
+    const nextBossWave = Math.min(
+      balanceConfig.waves.count,
+      Math.max(interval, (Math.floor(currentWave / interval) + 1) * interval),
+    );
+
+    this.clearMonsters();
+    this.waveSystem.jumpToWave(nextBossWave);
+    this.hud.setWave(this.waveSystem.currentWaveNumber);
+    this.effectSystem.createWaveAdvanceEffect(this.waveSystem.currentWaveNumber);
+  }
+
   private resolvePlayerMonsterCollision(): void {
     for (const monster of this.enemySystem.getMonsters()) {
       if (CollisionSystem.groundedPlayerHitsEnemy(this.player, monster)) {
-        this.loseLifeFromEnemy();
+        if (monster.type === "boss") {
+          this.showGameOver();
+          return;
+        }
+
+        const hadBoss = this.enemySystem.getMonsters().some((candidate) => candidate.type === "boss");
+        this.loseLifeFromEnemy(this.getLifeDamageForMonster(monster));
+        if (hadBoss) {
+          this.waveSystem.releaseBoss();
+        }
         return;
       }
 
@@ -363,12 +389,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resolveDefenseLine(): void {
-    const didLoseLife = this.enemySystem.getMonsters().some(
+    const monsters = this.enemySystem.getMonsters();
+    const reachedMonster = monsters.find(
       (monster) => CollisionSystem.enemyReachedBottom(monster, this.effectSystem.getDefenseLineY()),
     );
 
-    if (didLoseLife) {
-      this.loseLifeFromEnemy();
+    if (reachedMonster) {
+      if (reachedMonster.type === "boss") {
+        this.showGameOver();
+        return;
+      }
+
+      const hadBoss = monsters.some((monster) => monster.type === "boss");
+      this.loseLifeFromEnemy(this.getLifeDamageForMonster(reachedMonster));
+      if (hadBoss) {
+        this.waveSystem.releaseBoss();
+      }
     }
 
     if (this.life <= 0) {
@@ -376,10 +412,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private loseLifeFromEnemy(): void {
-    this.life -= 1;
+  private loseLifeFromEnemy(lifeDamage = 1): void {
+    this.life -= lifeDamage;
     this.player.flashHit();
-    const scoreState = this.scoreSystem.subtractScore(balanceConfig.run.lifeLossScorePenalty);
+    const scoreState = this.scoreSystem.subtractScore(balanceConfig.run.lifeLossScorePenalty * lifeDamage);
     this.hud.setLife(this.life);
     this.hud.setScore(scoreState.score);
     this.resetCombo();
@@ -387,8 +423,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(balanceConfig.run.lifeLossShakeDuration, balanceConfig.run.lifeLossShakeIntensity);
   }
 
-  private recordMonsterKill(): void {
-    const didAdvanceWave = this.waveSystem.recordKill();
+  private getLifeDamageForMonster(monster: Monster): number {
+    return monster.type === "boss" ? balanceConfig.boss.lifeDamage : 1;
+  }
+
+  private recordMonsterKill(monster: Monster): void {
+    const didAdvanceWave = this.waveSystem.recordMonsterKill(monster.type);
 
     if (didAdvanceWave && !this.gameStateSystem.isUpgrade()) {
       this.hud.setWave(this.waveSystem.currentWaveNumber);
@@ -498,6 +538,13 @@ export class GameScene extends Phaser.Scene {
     const roundedDamage = Math.max(1, Math.round(damage));
     const isDefeated = monster.takeDamage(roundedDamage, { impact: options.impact });
     this.effectSystem.showDamageNumber(monster.x, monster.y - monster.radius, roundedDamage, options.color, options.critical);
+    if (monster.type === "boss") {
+      this.effectSystem.createSlashMarkEffect(
+        monster.x,
+        monster.y + balanceConfig.boss.slashMarkYOffset,
+        monster.radius * balanceConfig.boss.slashMarkRadiusMultiplier,
+      );
+    }
 
     if (options.combo) {
       this.addComboScore(isDefeated);
@@ -509,12 +556,18 @@ export class GameScene extends Phaser.Scene {
     if (isDefeated) {
       this.attackSystem.forgetMonster(monster);
       this.soundSystem.playSfx(SOUND_ASSETS.KILL.key);
-      this.effectSystem.createMonsterDefeatEffect(monster.x, monster.y, monster.radius);
+      const defeatEffectRadius = monster.type === "boss"
+        ? monster.radius * balanceConfig.boss.slashMarkRadiusMultiplier
+        : monster.radius;
+      const defeatEffectY = monster.type === "boss"
+        ? monster.y + balanceConfig.boss.slashMarkYOffset
+        : monster.y;
+      this.effectSystem.createMonsterDefeatEffect(monster.x, defeatEffectY, defeatEffectRadius);
       if (options.combo) {
         this.hud.setScore(this.scoreSystem.addScore(monster.scoreValue - balanceConfig.combat.scorePerKill).score);
       }
       this.enemySystem.removeMonster(monster);
-      this.recordMonsterKill();
+      this.recordMonsterKill(monster);
     }
 
     return isDefeated;

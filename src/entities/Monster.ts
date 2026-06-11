@@ -6,6 +6,8 @@ type MonsterOptions = {
   hp?: number;
   fallSpeed?: number;
   type?: EnemyType;
+  scoreValue?: number;
+  textureKey?: string;
 };
 
 type DamageOptions = {
@@ -18,11 +20,17 @@ type FreezeOptions = {
 };
 
 export class Monster extends Phaser.GameObjects.Container {
+  readonly type: EnemyType;
   readonly radius: number;
   readonly scoreValue: number;
   private readonly core: Phaser.GameObjects.Shape;
   private readonly collisionDebugBox: Phaser.GameObjects.Rectangle;
+  private readonly maxHp: number;
   private sprite?: Phaser.GameObjects.Image;
+  private bossHpBar?: Phaser.GameObjects.Graphics;
+  private bossHpBarWidth = 0;
+  private bossHpBarHeight = 0;
+  private bossHpBarY = 0;
   private readonly baseColor: number;
   private readonly fallSpeed: number;
   private hp: number = balanceConfig.monster.maxHp;
@@ -37,11 +45,13 @@ export class Monster extends Phaser.GameObjects.Container {
     super(scene, x, y);
 
     const monsterType = options.type ?? "normal";
+    this.type = monsterType;
     const typeConfig = enemyDefinitions[monsterType];
     this.radius = typeConfig.radius;
-    this.scoreValue = typeConfig.scoreValue;
+    this.scoreValue = options.scoreValue ?? typeConfig.scoreValue;
     this.baseColor = typeConfig.color;
-    this.hp = options.hp ?? balanceConfig.monster.maxHp;
+    this.maxHp = options.hp ?? balanceConfig.monster.maxHp;
+    this.hp = this.maxHp;
     this.fallSpeed =
       (options.fallSpeed ?? balanceConfig.monster.fallSpeed) +
       Phaser.Math.Between(balanceConfig.monster.fallSpeedRandomMin, balanceConfig.monster.fallSpeedRandomMax);
@@ -50,16 +60,22 @@ export class Monster extends Phaser.GameObjects.Container {
       .rectangle(0, 0, this.radius * 2, this.radius * 2, 0xff3d3d, 0.06)
       .setStrokeStyle(2, 0xff3d3d, 0.38);
     const eye = scene.add.rectangle(0, -3, 18, 5, 0xf8f1ff);
+    const requestedTextureKey = options.textureKey ?? typeConfig.assetKey;
+    const textureKey = scene.textures.exists(requestedTextureKey) ? requestedTextureKey : typeConfig.assetKey;
 
-    if (scene.textures.exists(typeConfig.assetKey)) {
+    if (scene.textures.exists(textureKey)) {
       this.sprite = scene.add
-        .image(0, 0, typeConfig.assetKey)
+        .image(0, 0, textureKey)
         .setDisplaySize(this.radius * 2, this.radius * 2);
       this.core.setVisible(false);
       eye.setVisible(false);
       this.add([this.sprite, this.core, eye, this.collisionDebugBox]);
     } else {
       this.add([this.core, eye, this.collisionDebugBox]);
+    }
+
+    if (this.type === "boss") {
+      this.createBossHpBar(scene);
     }
 
     scene.add.existing(this);
@@ -100,13 +116,14 @@ export class Monster extends Phaser.GameObjects.Container {
       );
     }
 
-    if (now >= this.frozenUntil) {
+    if (now >= this.frozenUntil && this.type !== "boss") {
       this.rotation += balanceConfig.monster.rotationSpeed * deltaMs;
     }
   }
 
   takeDamage(damage: number, options: DamageOptions = {}): boolean {
     this.hp = Math.max(0, this.hp - damage);
+    this.updateBossHpBar();
 
     if (options.impact ?? true) {
       this.applyLiftAndSlow(
@@ -117,6 +134,7 @@ export class Monster extends Phaser.GameObjects.Container {
     }
 
     this.flash();
+    this.playBossHitNudge();
 
     return this.hp <= 0;
   }
@@ -148,16 +166,57 @@ export class Monster extends Phaser.GameObjects.Container {
 
   private applyLiftAndSlow(liftVelocity: number, slowMultiplier: number, slowDuration: number): void {
     const now = this.scene.time.now;
-    this.slowMultiplier = slowMultiplier;
-    this.slowDuration = slowDuration;
+    const isBoss = this.type === "boss";
+    const adjustedLiftVelocity = isBoss
+      ? liftVelocity * balanceConfig.boss.liftVelocityMultiplier
+      : liftVelocity;
+    const adjustedSlowMultiplier = isBoss
+      ? Math.max(slowMultiplier, balanceConfig.boss.slowMultiplier)
+      : slowMultiplier;
+    const adjustedSlowDuration = isBoss
+      ? slowDuration * balanceConfig.boss.slowDurationMultiplier
+      : slowDuration;
+
+    this.slowMultiplier = adjustedSlowMultiplier;
+    this.slowDuration = adjustedSlowDuration;
     this.slowedFrom = now;
-    this.slowedUntil = now + slowDuration;
-    this.liftVelocity = Math.min(this.liftVelocity, -liftVelocity);
+    this.slowedUntil = now + adjustedSlowDuration;
+    this.liftVelocity = Math.min(this.liftVelocity, -adjustedLiftVelocity);
   }
 
   private flash(): void {
-    this.core.setFillStyle(0xf4e36f);
-    this.scene.time.delayedCall(80, () => this.core.setFillStyle(this.baseColor));
+    const hasSprite = Boolean(this.sprite);
+
+    if (hasSprite) {
+      this.sprite?.setBlendMode(Phaser.BlendModes.ADD);
+      this.sprite?.setAlpha(1);
+    } else {
+      this.core.setFillStyle(0xffffff);
+    }
+
+    this.scene.time.delayedCall(80, () => {
+      if (this.scene.time.now < this.frozenUntil) {
+        return;
+      }
+
+      this.core.setFillStyle(this.baseColor);
+      this.sprite?.setBlendMode(Phaser.BlendModes.NORMAL);
+      this.sprite?.setAlpha(1);
+    });
+  }
+
+  private playBossHitNudge(): void {
+    if (this.type !== "boss") {
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: this,
+      y: this.y - 5,
+      duration: 45,
+      yoyo: true,
+      ease: "Sine.easeOut",
+    });
   }
 
   private setFreezeTint(tintColor: number): void {
@@ -168,6 +227,56 @@ export class Monster extends Phaser.GameObjects.Container {
   private clearFreezeTint(): void {
     this.core.setFillStyle(this.baseColor);
     this.sprite?.clearTint();
+  }
+
+  private createBossHpBar(scene: Phaser.Scene): void {
+    const width = Math.min(260, this.radius * 1.7);
+    const height = 12;
+    const y = -this.radius + 130;
+
+    this.bossHpBarWidth = width;
+    this.bossHpBarHeight = height;
+    this.bossHpBarY = y;
+    this.bossHpBar = scene.add.graphics();
+    this.redrawBossHpBar(1);
+
+    this.add(this.bossHpBar);
+  }
+
+  private updateBossHpBar(): void {
+    if (!this.bossHpBar) {
+      return;
+    }
+
+    const hpRatio = Phaser.Math.Clamp(this.hp / this.maxHp, 0, 1);
+    this.redrawBossHpBar(hpRatio);
+  }
+
+  private redrawBossHpBar(hpRatio: number): void {
+    if (!this.bossHpBar) {
+      return;
+    }
+
+    const width = this.bossHpBarWidth;
+    const height = this.bossHpBarHeight;
+    const x = -width / 2;
+    const y = this.bossHpBarY - height / 2;
+    const radius = height / 2;
+    const fillWidth = Math.max(0, width * hpRatio);
+    const fillRadius = Math.min(radius - 2, fillWidth / 2);
+
+    this.bossHpBar.clear();
+    this.bossHpBar.fillStyle(0x20131a, 0.86);
+    this.bossHpBar.fillRoundedRect(x, y, width, height, radius);
+    this.bossHpBar.lineStyle(2, 0xf6e7d7, 0.82);
+    this.bossHpBar.strokeRoundedRect(x, y, width, height, radius);
+
+    if (fillWidth <= 0) {
+      return;
+    }
+
+    this.bossHpBar.fillStyle(0xff3f3f, 0.96);
+    this.bossHpBar.fillRoundedRect(x + 2, y + 2, Math.max(0, fillWidth - 4), height - 4, fillRadius);
   }
 
   private createCore(scene: Phaser.Scene, shape: string, color: number): Phaser.GameObjects.Shape {

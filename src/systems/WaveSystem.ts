@@ -11,6 +11,8 @@ export type MonsterSpawn = {
   hp: number;
   fallSpeed: number;
   type: MonsterType;
+  scoreValue?: number;
+  textureKey?: string;
 };
 
 export class WaveSystem {
@@ -18,6 +20,8 @@ export class WaveSystem {
   private killsInWave = 0;
   private lastSpawnAt = -Infinity;
   private spawnPausedUntil = -Infinity;
+  private bossSpawned = false;
+  private bossDefeated = false;
 
   get currentWaveNumber(): number {
     return this.currentWave.wave;
@@ -25,6 +29,16 @@ export class WaveSystem {
 
   createSpawns(time: number, aliveCount: number): MonsterSpawn[] {
     const wave = this.currentWave;
+
+    if (time >= this.spawnPausedUntil && this.isBossWave() && !this.bossSpawned) {
+      this.bossSpawned = true;
+      this.lastSpawnAt = time;
+      return [this.createBossSpawn(wave.fallSpeed)];
+    }
+
+    if (this.isBossWave()) {
+      return [];
+    }
 
     if (
       aliveCount >= wave.maxAlive ||
@@ -70,10 +84,43 @@ export class WaveSystem {
     const previousWave = this.currentWaveNumber;
     this.killsInWave += 1;
 
-    while (this.killsInWave >= this.currentWave.killsToNext && this.waveIndex < waveConfigs.length - 1) {
-      this.killsInWave -= this.currentWave.killsToNext;
+    return this.tryAdvanceWave(previousWave);
+  }
+
+  recordMonsterKill(type: MonsterType): boolean {
+    if (type === "boss") {
+      this.bossDefeated = true;
+    }
+
+    return this.recordKill();
+  }
+
+  releaseBoss(): void {
+    if (!this.isBossWave() || this.bossDefeated) return;
+
+    this.bossSpawned = false;
+  }
+
+  isBossWave(waveNumber = this.currentWaveNumber): boolean {
+    return waveNumber % balanceConfig.boss.waveInterval === 0;
+  }
+
+  private tryAdvanceWave(previousWave: number): boolean {
+    while (this.waveIndex < waveConfigs.length - 1) {
+      const isBossWave = this.isBossWave();
+      const canAdvance = isBossWave
+        ? this.bossDefeated
+        : this.killsInWave >= this.currentWave.killsToNext;
+
+      if (!canAdvance) {
+        break;
+      }
+
+      this.killsInWave = isBossWave ? 0 : this.killsInWave - this.currentWave.killsToNext;
       this.waveIndex += 1;
       this.lastSpawnAt = -Infinity;
+      this.bossSpawned = false;
+      this.bossDefeated = false;
     }
 
     return this.currentWaveNumber !== previousWave;
@@ -84,6 +131,18 @@ export class WaveSystem {
     this.killsInWave = 0;
     this.lastSpawnAt = -Infinity;
     this.spawnPausedUntil = -Infinity;
+    this.bossSpawned = false;
+    this.bossDefeated = false;
+  }
+
+  jumpToWave(waveNumber: number): void {
+    const targetIndex = Phaser.Math.Clamp(Math.floor(waveNumber) - 1, 0, waveConfigs.length - 1);
+    this.waveIndex = targetIndex;
+    this.killsInWave = 0;
+    this.lastSpawnAt = -Infinity;
+    this.spawnPausedUntil = -Infinity;
+    this.bossSpawned = false;
+    this.bossDefeated = false;
   }
 
   pauseSpawns(time: number, durationMs: number): void {
@@ -92,6 +151,32 @@ export class WaveSystem {
 
   private get currentWave() {
     return waveConfigs[this.waveIndex];
+  }
+
+  private createBossSpawn(fallSpeed: number): MonsterSpawn {
+    const bossWaveIndex = Math.max(0, Math.floor(this.currentWaveNumber / balanceConfig.boss.waveInterval) - 1);
+    const bossHp = Math.round(
+      balanceConfig.boss.baseHp * (1 + bossWaveIndex * balanceConfig.boss.hpMultiplierPerBossWave),
+    );
+    const typeConfig = enemyDefinitions.boss;
+
+    return {
+      x: balanceConfig.boss.spawnX,
+      y: balanceConfig.boss.spawnY,
+      hp: bossHp,
+      fallSpeed: fallSpeed * typeConfig.speedMultiplier,
+      type: "boss",
+      textureKey: this.getBossTextureKey(),
+      scoreValue: balanceConfig.boss.baseScore + this.currentWaveNumber * balanceConfig.boss.scorePerWave,
+    };
+  }
+
+  private getBossTextureKey(): string {
+    if (this.currentWaveNumber <= balanceConfig.boss.waveInterval) {
+      return enemyDefinitions.boss.assetKey;
+    }
+
+    return `enemy_boss_wave_${this.currentWaveNumber}`;
   }
 
   private pickMonsterType(): MonsterType {

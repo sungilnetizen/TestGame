@@ -78,6 +78,7 @@ export const createWaveConfigs = (): WaveConfig[] =>
         orb: wave >= balanceConfig.waves.orbStartWave
           ? balanceConfig.waves.orbWeightBase + Math.floor(wave * balanceConfig.waves.orbWeightPerWave)
           : 0,
+        boss: 0,
       },
     };
   });

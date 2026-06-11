@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { balanceConfig } from "../config/balanceConfig";
 import { Monster } from "../entities/Monster";
 import type { WaveSystem } from "./WaveSystem";
 
@@ -19,9 +20,15 @@ export class EnemySystem {
         hp: spawn.hp,
         fallSpeed: spawn.fallSpeed,
         type: spawn.type,
+        scoreValue: spawn.scoreValue,
+        textureKey: spawn.textureKey,
       });
       monster.setDebugVisible(this.debugVisible);
       this.monsters.push(monster);
+
+      if (spawn.type === "boss") {
+        this.scene.cameras.main.shake(balanceConfig.boss.spawnShakeDuration, balanceConfig.boss.spawnShakeIntensity);
+      }
     }
   }
 

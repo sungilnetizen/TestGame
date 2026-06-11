@@ -9,6 +9,7 @@ export class InputSystem {
     private readonly onControl: ControlHandler,
     private readonly onPause: () => void,
     private readonly onToggleDebug?: () => void,
+    private readonly onJumpToNextBossWave?: () => void,
   ) {}
 
   registerKeyboard(): void {
@@ -17,5 +18,6 @@ export class InputSystem {
     this.scene.input.keyboard?.on("keydown-K", () => this.onControl("burst"));
     this.scene.input.keyboard?.on("keydown-ESC", () => this.onPause());
     this.scene.input.keyboard?.on("keydown-D", () => this.onToggleDebug?.());
+    this.scene.input.keyboard?.on("keydown-Q", () => this.onJumpToNextBossWave?.());
   }
 }

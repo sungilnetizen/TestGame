@@ -37,6 +37,12 @@ export const enemyDefinitions = {
     color: 0xd7c94f,
     shape: "diamond",
   },
+  boss: {
+    assetKey: "enemy_boss",
+    ...balanceConfig.enemyTypes.boss,
+    color: 0x6f5c82,
+    shape: "square",
+  },
 } as const;
 
 export type EnemyType = keyof typeof enemyDefinitions;

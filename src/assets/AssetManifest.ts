@@ -44,6 +44,30 @@ export const IMAGE_ASSETS = {
     key: "enemy_orb",
     path: "assets/images/enemies/enemy_orb.png",
   },
+  ENEMY_BOSS: {
+    key: "enemy_boss",
+    path: "assets/images/enemies/enemy_boss.png",
+  },
+  ENEMY_BOSS_WAVE_10: {
+    key: "enemy_boss_wave_10",
+    path: "assets/images/enemies/enemy_boss_wave_10.png",
+  },
+  ENEMY_BOSS_WAVE_15: {
+    key: "enemy_boss_wave_15",
+    path: "assets/images/enemies/enemy_boss_wave_15.png",
+  },
+  ENEMY_BOSS_WAVE_20: {
+    key: "enemy_boss_wave_20",
+    path: "assets/images/enemies/enemy_boss_wave_20.png",
+  },
+  ENEMY_BOSS_WAVE_25: {
+    key: "enemy_boss_wave_25",
+    path: "assets/images/enemies/enemy_boss_wave_25.png",
+  },
+  ENEMY_BOSS_WAVE_30: {
+    key: "enemy_boss_wave_30",
+    path: "assets/images/enemies/enemy_boss_wave_30.png",
+  },
   SLASH_BASIC: {
     key: "slash_basic",
     path: "assets/images/effects/slash_basic.png",

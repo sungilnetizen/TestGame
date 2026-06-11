@@ -245,7 +245,7 @@ export class EffectSystem {
     }
   }
 
-  private createSlashMarkEffect(x: number, y: number, monsterRadius: number): void {
+  createSlashMarkEffect(x: number, y: number, monsterRadius: number): void {
     if (!this.scene.textures.exists(IMAGE_ASSETS.SLASH_MARK.key)) return;
 
     const size = monsterRadius * balanceConfig.effects.slashMarkSizeMultiplier;

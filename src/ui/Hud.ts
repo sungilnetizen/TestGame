@@ -23,8 +23,8 @@ export class Hud {
       strokeThickness: 3,
     };
 
-    this.waveText = scene.add.text(16, 14, "Wave 1", style).setShadow(0, 2, "#100b10", 4, true, true);
-    this.scoreText = scene.add.text(16, 40, "Score 0", style).setShadow(0, 2, "#100b10", 4, true, true);
+    this.waveText = scene.add.text(16, 14, "Wave 1", style).setShadow(0, 2, "#100b10", 4, true, true).setDepth(1000);
+    this.scoreText = scene.add.text(16, 40, "Score 0", style).setShadow(0, 2, "#100b10", 4, true, true).setDepth(1000);
     this.comboNumberText = scene.add
       .text(0, 0, "0", {
         ...style,
@@ -55,12 +55,12 @@ export class Hud {
       color: "#ff5a6f",
       stroke: "#351017",
       strokeThickness: 4,
-    }).setShadow(0, 2, "#16080c", 4, true, true);
+    }).setShadow(0, 2, "#16080c", 4, true, true).setDepth(1000);
     this.burstText = scene.add.text(276, 16, "Burst Ready", {
       ...style,
       fontSize: "13px",
       color: "#f3d88b",
-    }).setAlpha(0);
+    }).setAlpha(0).setDepth(1000);
   }
 
   setLife(life: number): void {
