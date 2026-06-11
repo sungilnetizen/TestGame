@@ -58,6 +58,7 @@ export class GameScene extends Phaser.Scene {
   private runRecordSystem = new RunRecordSystem();
   private gameStateSystem = new GameStateSystem();
   private shopReturnTarget: "title" | "pause" = "title";
+  private debugVisible = true;
   private pauseButton?: Phaser.GameObjects.Arc | Phaser.GameObjects.Image;
   private pauseButtonText?: Phaser.GameObjects.Text;
 
@@ -85,6 +86,7 @@ export class GameScene extends Phaser.Scene {
       this,
       (action) => this.handleControl(action),
       () => this.togglePause(),
+      () => this.toggleDebugVisible(),
     );
     this.touchControls = new TouchControls(this, (action) => this.handleControl(action));
     this.upgradeStatusList = new UpgradeStatusList(this, this.upgradeSystem.getAllUpgrades(), {
@@ -96,6 +98,7 @@ export class GameScene extends Phaser.Scene {
     }).setDepth(900);
     this.upgradeStatusList.refresh(this.upgradeState);
     this.createPauseButton();
+    this.applyDebugVisible();
 
     this.inputSystem.registerKeyboard();
 
@@ -152,7 +155,7 @@ export class GameScene extends Phaser.Scene {
       attackDamage: this.attackSystem.getAttackDamage(),
       setCooldownDisplay: (remainingMs, cooldownMs) => this.touchControls.setBurstCooldown(remainingMs, cooldownMs),
       createBurstEffect: () => this.effectSystem.createBurstEffect(this.player.x, this.player.y),
-      shakeCamera: () => this.cameras.main.shake(180, 0.006),
+      shakeCamera: () => this.cameras.main.shake(balanceConfig.burst.cameraShakeDuration, balanceConfig.burst.cameraShakeIntensity),
       damageMonster: (monster, damage) => {
         this.damageMonster(monster, damage, {
           color: "#fff8df",
@@ -333,6 +336,17 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtonText?.setVisible(visible);
   }
 
+  private toggleDebugVisible(): void {
+    this.debugVisible = !this.debugVisible;
+    this.applyDebugVisible();
+  }
+
+  private applyDebugVisible(): void {
+    this.player?.setDebugVisible(this.debugVisible);
+    this.enemySystem?.setDebugVisible(this.debugVisible);
+    this.effectSystem?.setDebugVisible(this.debugVisible);
+  }
+
   private resolvePlayerMonsterCollision(): void {
     for (const monster of this.enemySystem.getMonsters()) {
       if (CollisionSystem.groundedPlayerHitsEnemy(this.player, monster)) {
@@ -365,12 +379,12 @@ export class GameScene extends Phaser.Scene {
   private loseLifeFromEnemy(): void {
     this.life -= 1;
     this.player.flashHit();
-    const scoreState = this.scoreSystem.subtractScore(25);
+    const scoreState = this.scoreSystem.subtractScore(balanceConfig.run.lifeLossScorePenalty);
     this.hud.setLife(this.life);
     this.hud.setScore(scoreState.score);
     this.resetCombo();
     this.clearMonsters();
-    this.cameras.main.shake(160, 0.009);
+    this.cameras.main.shake(balanceConfig.run.lifeLossShakeDuration, balanceConfig.run.lifeLossShakeIntensity);
   }
 
   private recordMonsterKill(): void {
@@ -410,7 +424,7 @@ export class GameScene extends Phaser.Scene {
     this.selectedUpgrades.push(upgrade);
     this.upgradeStatusList.refresh(this.upgradeState);
     this.freezeMonstersAfterUpgrade();
-    this.waveSystem.pauseSpawns(this.time.now, 220);
+    this.waveSystem.pauseSpawns(this.time.now, balanceConfig.run.upgradeSpawnPauseDuration);
     this.gameStateSystem.resumePlaying();
     this.upgradeScreen.destroy();
     this.setPauseButtonVisible(true);
@@ -495,7 +509,7 @@ export class GameScene extends Phaser.Scene {
     if (isDefeated) {
       this.attackSystem.forgetMonster(monster);
       this.soundSystem.playSfx(SOUND_ASSETS.KILL.key);
-      this.effectSystem.createMonsterDefeatEffect(monster.x, monster.y);
+      this.effectSystem.createMonsterDefeatEffect(monster.x, monster.y, monster.radius);
       if (options.combo) {
         this.hud.setScore(this.scoreSystem.addScore(monster.scoreValue - balanceConfig.combat.scorePerKill).score);
       }
@@ -509,8 +523,8 @@ export class GameScene extends Phaser.Scene {
   private freezeMonstersAfterUpgrade(): void {
     for (const monster of this.enemySystem.getMonsters()) {
       monster.freeze({
-        durationMs: 180,
-        tintColor: 0x6fb7ff,
+        durationMs: balanceConfig.run.upgradeFreezeDuration,
+        tintColor: balanceConfig.run.upgradeFreezeTint,
       });
     }
   }

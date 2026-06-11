@@ -46,13 +46,13 @@ export class AttackSystem {
 
     this.lastAttackAt = now;
     const isGroundAttack = options.player.isGrounded();
-    const attackDamageMultiplier = isGroundAttack ? 0.55 : 1;
+    const attackDamageMultiplier = isGroundAttack ? balanceConfig.combat.groundAttackDamageMultiplier : 1;
     options.player.softenJumpFromAttack();
 
     const attackCenterX = options.player.x;
-    const attackCenterY = options.player.y + (isGroundAttack ? 18 : 8);
-    const attackRadius = this.getAttackRadius(options.upgradeState) * (isGroundAttack ? 0.82 : 1);
-    const attackArcDegrees = balanceConfig.combat.attackArcDegrees * (isGroundAttack ? 0.84 : 1);
+    const attackCenterY = options.player.y + (isGroundAttack ? balanceConfig.combat.groundAttackYOffset : balanceConfig.combat.airAttackYOffset);
+    const attackRadius = this.getAttackRadius(options.upgradeState) * (isGroundAttack ? balanceConfig.combat.groundAttackRadiusMultiplier : 1);
+    const attackArcDegrees = balanceConfig.combat.attackArcDegrees * (isGroundAttack ? balanceConfig.combat.groundAttackArcMultiplier : 1);
     this.createSlashEffect(attackCenterX, attackCenterY, attackRadius, attackArcDegrees, options.upgradeState);
 
     let hitCount = 0;
@@ -79,11 +79,11 @@ export class AttackSystem {
     }
 
     if (hitCount > 0 && options.upgradeState.giantSword > 0) {
-      this.scene.cameras.main.shake(80, 0.003);
+      this.scene.cameras.main.shake(balanceConfig.combat.giantSwordShakeDuration, balanceConfig.combat.giantSwordShakeIntensity);
     }
 
     if (options.upgradeState.phantomSword > 0) {
-      this.scene.time.delayedCall(150, () => this.performPhantomSlash(isGroundAttack, attackDamageMultiplier, options));
+      this.scene.time.delayedCall(balanceConfig.combat.phantomSwordDelay, () => this.performPhantomSlash(isGroundAttack, attackDamageMultiplier, options));
     }
   }
 
@@ -104,11 +104,11 @@ export class AttackSystem {
   }
 
   private getAttackRadius(upgradeState: RunUpgradeState): number {
-    return balanceConfig.combat.attackRadius + upgradeState.giantSword * 24;
+    return balanceConfig.combat.attackRadius + upgradeState.giantSword * balanceConfig.combat.giantSwordRadiusBonus;
   }
 
   private getAttackCooldown(upgradeState: RunUpgradeState): number {
-    return balanceConfig.combat.attackCooldown * (1 + upgradeState.giantSword * 0.07);
+    return balanceConfig.combat.attackCooldown * (1 + upgradeState.giantSword * balanceConfig.combat.giantSwordCooldownPenalty);
   }
 
   private createSlashEffect(
@@ -221,14 +221,21 @@ export class AttackSystem {
   }
 
   private applyBurn(monster: Monster, attackDamageMultiplier: number, options: AttackOptions): void {
-    const burnDamage = Math.max(3, Math.round(this.getAttackDamage() * (0.06 + options.upgradeState.fireSword * 0.02)));
+    const burnDamage = Math.max(
+      balanceConfig.combat.fireSwordMinBurnDamage,
+      Math.round(
+        this.getAttackDamage() *
+          (balanceConfig.combat.fireSwordBaseBurnRate +
+            options.upgradeState.fireSword * balanceConfig.combat.fireSwordLevelBurnRate),
+      ),
+    );
     const scaledBurnDamage = Math.max(1, Math.round(burnDamage * attackDamageMultiplier));
-    const burnTicks = 3;
+    const burnTicks = balanceConfig.combat.fireSwordTicks;
     const burnToken = (this.burnTokens.get(monster) ?? 0) + 1;
     this.burnTokens.set(monster, burnToken);
 
     for (let tick = 1; tick <= burnTicks; tick += 1) {
-      this.scene.time.delayedCall(tick * 320, () => {
+      this.scene.time.delayedCall(tick * balanceConfig.combat.fireSwordTickInterval, () => {
         if (
           options.isGameBlocked() ||
           !options.getMonsters().includes(monster) ||
@@ -248,7 +255,9 @@ export class AttackSystem {
   }
 
   private chainLightning(source: Monster, attackDamageMultiplier: number, options: AttackOptions): void {
-    const maxChainDistance = 150 + options.upgradeState.lightningSword * 18;
+    const maxChainDistance =
+      balanceConfig.combat.lightningSwordBaseRange +
+      options.upgradeState.lightningSword * balanceConfig.combat.lightningSwordLevelRange;
     const target = options.getMonsters()
       .filter((monster) => monster !== source)
       .map((monster) => ({
@@ -269,11 +278,11 @@ export class AttackSystem {
     this.scene.tweens.add({
       targets: line,
       alpha: 0,
-      duration: 160,
+      duration: balanceConfig.combat.lightningSwordEffectDuration,
       onComplete: () => line.destroy(),
     });
 
-    options.damageMonster(target, this.getAttackDamage() * attackDamageMultiplier * (0.26 + options.upgradeState.lightningSword * 0.04), {
+    options.damageMonster(target, this.getAttackDamage() * attackDamageMultiplier * (balanceConfig.combat.lightningSwordBaseDamageRate + options.upgradeState.lightningSword * balanceConfig.combat.lightningSwordLevelDamageRate), {
       color: "#76d8ff",
       combo: true,
       impact: true,
@@ -285,9 +294,9 @@ export class AttackSystem {
     if (options.isGameBlocked()) return;
 
     const attackCenterX = options.player.x;
-    const attackCenterY = options.player.y + (isGroundAttack ? 18 : 8);
-    const attackRadius = this.getAttackRadius(options.upgradeState) * (isGroundAttack ? 0.82 : 1);
-    const attackArcDegrees = balanceConfig.combat.attackArcDegrees * (isGroundAttack ? 0.84 : 1);
+    const attackCenterY = options.player.y + (isGroundAttack ? balanceConfig.combat.groundAttackYOffset : balanceConfig.combat.airAttackYOffset);
+    const attackRadius = this.getAttackRadius(options.upgradeState) * (isGroundAttack ? balanceConfig.combat.groundAttackRadiusMultiplier : 1);
+    const attackArcDegrees = balanceConfig.combat.attackArcDegrees * (isGroundAttack ? balanceConfig.combat.groundAttackArcMultiplier : 1);
     const attackArcStart = 270 - attackArcDegrees / 2;
     const attackArcEnd = 270 + attackArcDegrees / 2;
     const phantom = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY }).setDepth(650);
@@ -310,13 +319,13 @@ export class AttackSystem {
       alpha: 0,
       scaleX: 1.12,
       scaleY: 1.12,
-      duration: 220,
+      duration: balanceConfig.combat.phantomSwordEffectDuration,
       onComplete: () => phantom.destroy(),
     });
 
     for (const monster of [...options.getMonsters()]) {
       if (CollisionSystem.attackHitsEnemy(attackCenterX, attackCenterY, attackRadius, monster)) {
-        options.damageMonster(monster, this.getAttackDamage() * attackDamageMultiplier * (0.22 + options.upgradeState.phantomSword * 0.05), {
+        options.damageMonster(monster, this.getAttackDamage() * attackDamageMultiplier * (balanceConfig.combat.phantomSwordBaseDamageRate + options.upgradeState.phantomSword * balanceConfig.combat.phantomSwordLevelDamageRate), {
           color: "#d9ddff",
           combo: true,
           impact: !isGroundAttack,

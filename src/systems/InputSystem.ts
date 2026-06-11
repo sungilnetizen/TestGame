@@ -8,6 +8,7 @@ export class InputSystem {
     private readonly scene: Phaser.Scene,
     private readonly onControl: ControlHandler,
     private readonly onPause: () => void,
+    private readonly onToggleDebug?: () => void,
   ) {}
 
   registerKeyboard(): void {
@@ -15,5 +16,6 @@ export class InputSystem {
     this.scene.input.keyboard?.on("keydown-J", () => this.onControl("attack"));
     this.scene.input.keyboard?.on("keydown-K", () => this.onControl("burst"));
     this.scene.input.keyboard?.on("keydown-ESC", () => this.onPause());
+    this.scene.input.keyboard?.on("keydown-D", () => this.onToggleDebug?.());
   }
 }

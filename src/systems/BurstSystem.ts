@@ -40,7 +40,10 @@ export class BurstSystem {
     }
 
     if (options.upgradeState.holyBurst > 0) {
-      const damage = options.attackDamage * (0.14 + options.upgradeState.holyBurst * 0.03);
+      const damage =
+        options.attackDamage *
+        (balanceConfig.burst.holyBurstBaseDamageRate +
+          options.upgradeState.holyBurst * balanceConfig.burst.holyBurstLevelDamageRate);
 
       for (const monster of [...options.monsters]) {
         options.damageMonster(monster, damage);
@@ -52,11 +55,11 @@ export class BurstSystem {
   }
 
   private getBurstCooldown(upgradeState: RunUpgradeState): number {
-    return balanceConfig.burst.cooldown * Math.pow(0.9, upgradeState.manaCircuit);
+    return balanceConfig.burst.cooldown * Math.pow(balanceConfig.burst.manaCircuitCooldownMultiplier, upgradeState.manaCircuit);
   }
 
   private getBurstLiftVelocity(upgradeState: RunUpgradeState): number {
-    return balanceConfig.burst.liftVelocity + upgradeState.earthRebound * 18;
+    return balanceConfig.burst.liftVelocity + upgradeState.earthRebound * balanceConfig.burst.earthReboundLiftBonus;
   }
 
   private getBurstSlowMultiplier(): number {
@@ -64,6 +67,6 @@ export class BurstSystem {
   }
 
   private getBurstSlowDuration(upgradeState: RunUpgradeState): number {
-    return balanceConfig.burst.slowDuration + upgradeState.timeRune * 220;
+    return balanceConfig.burst.slowDuration + upgradeState.timeRune * balanceConfig.burst.timeRuneSlowDurationBonus;
   }
 }

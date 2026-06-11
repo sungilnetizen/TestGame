@@ -8,6 +8,10 @@ export const IMAGE_ASSETS = {
     key: "background_stage_01",
     path: "assets/images/backgrounds/stage_01.png",
   },
+  TITLE_BACKGROUND: {
+    key: "title_background",
+    path: "assets/images/backgrounds/title.png",
+  },
   PLAYER_IDLE: {
     key: "player_idle",
     path: "assets/images/player/player_idle.png",
@@ -51,6 +55,10 @@ export const IMAGE_ASSETS = {
   KILL_BURST: {
     key: "kill_burst",
     path: "assets/images/effects/kill_burst.png",
+  },
+  SLASH_MARK: {
+    key: "slash_mark",
+    path: "assets/images/effects/slash_mark.png",
   },
   UPGRADE_CARD_BG: {
     key: "upgrade_card_bg",

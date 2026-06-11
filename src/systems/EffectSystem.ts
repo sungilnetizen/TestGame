@@ -80,6 +80,11 @@ export class EffectSystem {
     return CollisionSystem.getDefenseLineY() + this.getBackdropOffsetY();
   }
 
+  setDebugVisible(visible: boolean): void {
+    this.defenseLine?.setVisible(visible);
+    this.defenseLineZone?.setVisible(visible);
+  }
+
   private fitTallBackground(): void {
     if (!this.background) return;
 
@@ -185,7 +190,9 @@ export class EffectSystem {
     });
   }
 
-  createMonsterDefeatEffect(x: number, y: number): void {
+  createMonsterDefeatEffect(x: number, y: number, monsterRadius = 28): void {
+    this.createSlashMarkEffect(x, y, monsterRadius);
+
     if (this.scene.textures.exists(IMAGE_ASSETS.KILL_BURST.key)) {
       const killImage = this.scene.add
         .image(x, y, IMAGE_ASSETS.KILL_BURST.key)
@@ -236,6 +243,30 @@ export class EffectSystem {
         onComplete: () => shard.destroy(),
       });
     }
+  }
+
+  private createSlashMarkEffect(x: number, y: number, monsterRadius: number): void {
+    if (!this.scene.textures.exists(IMAGE_ASSETS.SLASH_MARK.key)) return;
+
+    const size = monsterRadius * balanceConfig.effects.slashMarkSizeMultiplier;
+    const slashMark = this.scene.add
+      .image(x, y, IMAGE_ASSETS.SLASH_MARK.key)
+      .setDisplaySize(size, size)
+      .setRotation(Phaser.Math.FloatBetween(0, Math.PI * 2))
+      .setAlpha(0.96)
+      .setDepth(630);
+    const targetScaleX = slashMark.scaleX * balanceConfig.effects.slashMarkScaleOutMultiplier;
+    const targetScaleY = slashMark.scaleY * balanceConfig.effects.slashMarkScaleOutMultiplier;
+
+    this.scene.tweens.add({
+      targets: slashMark,
+      alpha: 0,
+      scaleX: targetScaleX,
+      scaleY: targetScaleY,
+      duration: balanceConfig.effects.slashMarkDuration,
+      ease: "Sine.easeOut",
+      onComplete: () => slashMark.destroy(),
+    });
   }
 
   showDamageNumber(x: number, y: number, damage: number, color = "#fff1a8", isCritical = false): void {

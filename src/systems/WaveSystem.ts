@@ -45,7 +45,7 @@ export class WaveSystem {
     for (let i = 0; i < spawnCount; i += 1) {
       const centeredIndex = i - (spawnCount - 1) / 2;
       const spreadOffset = spawnCount === 1 ? 0 : centeredIndex * wave.groupSpread;
-      const jitter = Phaser.Math.Between(-10, 10);
+      const jitter = Phaser.Math.Between(balanceConfig.waves.spawnJitterMin, balanceConfig.waves.spawnJitterMax);
       const monsterType = this.pickMonsterType();
       const typeConfig = enemyDefinitions[monsterType];
       const x = Phaser.Math.Clamp(
@@ -56,7 +56,7 @@ export class WaveSystem {
 
       spawns.push({
         x,
-        y: -36 - i * 18,
+        y: balanceConfig.waves.spawnStartY - i * balanceConfig.waves.spawnStackSpacing,
         hp: Math.round(wave.monsterHp * typeConfig.hpMultiplier),
         fallSpeed: wave.fallSpeed * typeConfig.speedMultiplier,
         type: monsterType,

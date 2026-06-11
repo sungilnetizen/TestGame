@@ -124,6 +124,10 @@ export class Player extends Phaser.GameObjects.Container {
     });
   }
 
+  setDebugVisible(visible: boolean): void {
+    this.collisionDebugBox.setVisible(visible);
+  }
+
   destroy(fromScene?: boolean): void {
     this.shadow.destroy();
     super.destroy(fromScene);

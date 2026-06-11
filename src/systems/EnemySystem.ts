@@ -4,6 +4,7 @@ import type { WaveSystem } from "./WaveSystem";
 
 export class EnemySystem {
   private monsters: Monster[] = [];
+  private debugVisible = true;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -19,6 +20,7 @@ export class EnemySystem {
         fallSpeed: spawn.fallSpeed,
         type: spawn.type,
       });
+      monster.setDebugVisible(this.debugVisible);
       this.monsters.push(monster);
     }
   }
@@ -52,5 +54,13 @@ export class EnemySystem {
     }
 
     this.monsters = [];
+  }
+
+  setDebugVisible(visible: boolean): void {
+    this.debugVisible = visible;
+
+    for (const monster of this.monsters) {
+      monster.setDebugVisible(visible);
+    }
   }
 }

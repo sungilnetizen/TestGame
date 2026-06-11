@@ -22,6 +22,7 @@ export class Monster extends Phaser.GameObjects.Container {
   readonly scoreValue: number;
   private readonly core: Phaser.GameObjects.Shape;
   private readonly collisionDebugBox: Phaser.GameObjects.Rectangle;
+  private sprite?: Phaser.GameObjects.Image;
   private readonly baseColor: number;
   private readonly fallSpeed: number;
   private hp: number = balanceConfig.monster.maxHp;
@@ -41,7 +42,9 @@ export class Monster extends Phaser.GameObjects.Container {
     this.scoreValue = typeConfig.scoreValue;
     this.baseColor = typeConfig.color;
     this.hp = options.hp ?? balanceConfig.monster.maxHp;
-    this.fallSpeed = (options.fallSpeed ?? balanceConfig.monster.fallSpeed) + Phaser.Math.Between(-12, 18);
+    this.fallSpeed =
+      (options.fallSpeed ?? balanceConfig.monster.fallSpeed) +
+      Phaser.Math.Between(balanceConfig.monster.fallSpeedRandomMin, balanceConfig.monster.fallSpeedRandomMax);
     this.core = this.createCore(scene, typeConfig.shape, typeConfig.color);
     this.collisionDebugBox = scene.add
       .rectangle(0, 0, this.radius * 2, this.radius * 2, 0xff3d3d, 0.06)
@@ -49,12 +52,12 @@ export class Monster extends Phaser.GameObjects.Container {
     const eye = scene.add.rectangle(0, -3, 18, 5, 0xf8f1ff);
 
     if (scene.textures.exists(typeConfig.assetKey)) {
-      const sprite = scene.add
+      this.sprite = scene.add
         .image(0, 0, typeConfig.assetKey)
         .setDisplaySize(this.radius * 2, this.radius * 2);
       this.core.setVisible(false);
       eye.setVisible(false);
-      this.add([sprite, this.core, eye, this.collisionDebugBox]);
+      this.add([this.sprite, this.core, eye, this.collisionDebugBox]);
     } else {
       this.add([this.core, eye, this.collisionDebugBox]);
     }
@@ -69,9 +72,9 @@ export class Monster extends Phaser.GameObjects.Container {
 
     if (now < this.frozenUntil) {
       speedMultiplier = 0;
-      this.core.setFillStyle(0x5fb7ff);
+      this.setFreezeTint(0x5fb7ff);
     } else if (this.core.fillColor !== this.baseColor) {
-      this.core.setFillStyle(this.baseColor);
+      this.clearFreezeTint();
     }
 
     if (now < this.slowedUntil) {
@@ -97,7 +100,9 @@ export class Monster extends Phaser.GameObjects.Container {
       );
     }
 
-    this.rotation += 0.0007 * deltaMs;
+    if (now >= this.frozenUntil) {
+      this.rotation += balanceConfig.monster.rotationSpeed * deltaMs;
+    }
   }
 
   takeDamage(damage: number, options: DamageOptions = {}): boolean {
@@ -127,13 +132,18 @@ export class Monster extends Phaser.GameObjects.Container {
 
   freeze(options: FreezeOptions): void {
     const now = this.scene.time.now;
+    const tintColor = options.tintColor ?? 0x5fb7ff;
     this.frozenUntil = Math.max(this.frozenUntil, now + options.durationMs);
-    this.core.setFillStyle(options.tintColor ?? 0x5fb7ff);
+    this.setFreezeTint(tintColor);
     this.scene.time.delayedCall(options.durationMs, () => {
       if (this.scene.time.now >= this.frozenUntil) {
-        this.core.setFillStyle(this.baseColor);
+        this.clearFreezeTint();
       }
     });
+  }
+
+  setDebugVisible(visible: boolean): void {
+    this.collisionDebugBox.setVisible(visible);
   }
 
   private applyLiftAndSlow(liftVelocity: number, slowMultiplier: number, slowDuration: number): void {
@@ -148,6 +158,16 @@ export class Monster extends Phaser.GameObjects.Container {
   private flash(): void {
     this.core.setFillStyle(0xf4e36f);
     this.scene.time.delayedCall(80, () => this.core.setFillStyle(this.baseColor));
+  }
+
+  private setFreezeTint(tintColor: number): void {
+    this.core.setFillStyle(tintColor);
+    this.sprite?.setTint(tintColor);
+  }
+
+  private clearFreezeTint(): void {
+    this.core.setFillStyle(this.baseColor);
+    this.sprite?.clearTint();
   }
 
   private createCore(scene: Phaser.Scene, shape: string, color: number): Phaser.GameObjects.Shape {

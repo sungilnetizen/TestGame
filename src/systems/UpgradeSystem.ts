@@ -1,4 +1,5 @@
 import { upgradeDefinitions } from "../data/upgrades";
+import { balanceConfig } from "../config/balanceConfig";
 
 export type UpgradeCategory = "Attack" | "Burst";
 
@@ -22,7 +23,7 @@ export type UpgradeDefinition = {
 
 export type RunUpgradeState = Record<UpgradeId, number>;
 
-export const maxUpgradeLevel = 4;
+export const maxUpgradeLevel = balanceConfig.upgrades.maxLevel;
 
 export const defaultRunUpgradeState = (): RunUpgradeState => ({
   fireSword: 0,
