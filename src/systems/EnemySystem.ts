@@ -10,6 +10,7 @@ export class EnemySystem {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly waveSystem: WaveSystem,
+    private readonly onBossSpawn?: () => void,
   ) {}
 
   spawnMonsters(time: number): void {
@@ -28,6 +29,7 @@ export class EnemySystem {
 
       if (spawn.type === "boss") {
         this.scene.cameras.main.shake(balanceConfig.boss.spawnShakeDuration, balanceConfig.boss.spawnShakeIntensity);
+        this.onBossSpawn?.();
       }
     }
   }

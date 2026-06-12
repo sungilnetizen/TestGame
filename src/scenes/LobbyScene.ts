@@ -27,6 +27,8 @@ export class LobbyScene extends Phaser.Scene {
 
   create(data: LobbySceneData = {}): void {
     this.soundSystem = new SoundSystem(this);
+    this.sound.stopByKey(SOUND_ASSETS.BGM_TITLE.key);
+    this.soundSystem.playBgm(SOUND_ASSETS.BGM_LOBBY.key);
     const saveData = SaveSystem.load();
     this.selectedStageId = data.selectedStageId ?? saveData.selectedStageId;
     this.selectedCharacterIndex = Math.max(
@@ -149,6 +151,7 @@ export class LobbyScene extends Phaser.Scene {
       selectedStageId: this.selectedStageId,
     });
     this.soundSystem.playSfx(SOUND_ASSETS.BUTTON.key);
+    this.soundSystem.stopBgm();
     this.scene.start("GameScene", {
       mode,
       difficulty,

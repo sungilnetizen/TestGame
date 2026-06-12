@@ -59,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private runRecordSystem = new RunRecordSystem();
   private gameStateSystem = new GameStateSystem();
   private runConfig!: GameRunConfig;
+  private earnedGold = 0;
   private debugVisible = true;
   private pauseButton?: Phaser.GameObjects.Arc | Phaser.GameObjects.Image;
   private pauseButtonText?: Phaser.GameObjects.Text;
@@ -77,7 +78,7 @@ export class GameScene extends Phaser.Scene {
     this.effectSystem = new EffectSystem(this);
     this.attackSystem = new AttackSystem(this);
     this.waveSystem.configure(this.runConfig);
-    this.enemySystem = new EnemySystem(this, this.waveSystem);
+    this.enemySystem = new EnemySystem(this, this.waveSystem, () => this.soundSystem.playSfx(SOUND_ASSETS.BOSS_APPEAR.key));
     this.upgradeScreen = new UpgradeScreen(this, this.upgradeSystem);
     this.pauseMenu = new PauseMenu(this);
     this.effectSystem.createBackdrop();
@@ -116,7 +117,7 @@ export class GameScene extends Phaser.Scene {
     this.touchControls = new TouchControls(this, (action) => this.handleControl(action));
     this.upgradeStatusList = new UpgradeStatusList(this, this.upgradeSystem.getAllUpgrades(), {
       x: 16,
-      y: 106,
+      y: 132,
       columns: 1,
       maxItems: 4,
       compact: true,
@@ -147,6 +148,7 @@ export class GameScene extends Phaser.Scene {
       clearMonsters: () => this.clearMonsters(),
       resetCombo: () => this.resetCombo(),
       createSelectedUpgradeSummary: () => this.upgradeFlowSystem.createSelectedUpgradeSummary(this.upgradeState),
+      getEarnedGold: () => this.earnedGold,
     });
     this.createPauseButton();
     this.applyDebugVisible();
@@ -257,6 +259,8 @@ export class GameScene extends Phaser.Scene {
   private startNewGame(): void {
     this.pauseMenu.destroy();
     this.soundSystem.playSfx(SOUND_ASSETS.BUTTON.key);
+    this.sound.stopByKey(SOUND_ASSETS.BGM_TITLE.key);
+    this.sound.stopByKey(SOUND_ASSETS.BGM_LOBBY.key);
     this.soundSystem.playBgm(SOUND_ASSETS.BGM_BATTLE.key);
     this.resetRunState();
     this.gameStateSystem.enterPlaying();
@@ -364,6 +368,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private recordMonsterKill(monster: Monster): void {
+    this.tryDropGold(monster);
     const didAdvanceWave = this.waveSystem.recordMonsterKill(monster.type);
 
     if (this.waveSystem.isComplete) {
@@ -401,12 +406,41 @@ export class GameScene extends Phaser.Scene {
     this.playerDamageSystem?.reset();
     this.waveSystem.reset();
     this.upgradeState = defaultRunUpgradeState();
+    this.earnedGold = 0;
     this.gameStateSystem.reset();
     this.clearMonsters();
     this.hud?.setScore(0);
     this.hud?.setWave(1);
     this.hud?.setCombo(0);
+    this.hud?.setGold(0);
     this.upgradeFlowSystem?.reset(this.upgradeState);
+  }
+
+  private tryDropGold(monster: Monster): void {
+    const dropAmount = this.rollGoldDrop(monster);
+    if (dropAmount <= 0) return;
+
+    this.effectSystem.createGoldPickupEffect(
+      monster.x,
+      monster.y,
+      this.hud.getGoldTargetPosition(),
+      () => {
+        this.earnedGold += dropAmount;
+        this.hud.setGold(this.earnedGold);
+      },
+    );
+  }
+
+  private rollGoldDrop(monster: Monster): number {
+    if (monster.type === "boss") {
+      return Phaser.Math.Between(balanceConfig.run.bossGoldMin, balanceConfig.run.bossGoldMax);
+    }
+
+    if (Phaser.Math.FloatBetween(0, 1) > balanceConfig.run.monsterGoldDropChance) {
+      return 0;
+    }
+
+    return Phaser.Math.Between(balanceConfig.run.monsterGoldMin, balanceConfig.run.monsterGoldMax);
   }
 
   private clearMonsters(): void {

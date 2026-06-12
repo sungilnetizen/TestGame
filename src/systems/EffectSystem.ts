@@ -355,6 +355,84 @@ export class EffectSystem {
     });
   }
 
+  createGoldPickupEffect(
+    startX: number,
+    startY: number,
+    target: Phaser.Math.Vector2,
+    onCollect: () => void,
+  ): void {
+    const gold = this.createGoldPickupVisual(startX, startY);
+    const arcX = startX + Phaser.Math.Between(-18, 18);
+    const arcY = startY - Phaser.Math.Between(18, 34);
+
+    this.scene.tweens.add({
+      targets: gold,
+      x: arcX,
+      y: arcY,
+      duration: 130,
+      ease: "Quad.easeOut",
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: gold,
+          x: target.x,
+          y: target.y,
+          scaleX: gold.scaleX * 0.72,
+          scaleY: gold.scaleY * 0.72,
+          duration: 360,
+          ease: "Cubic.easeIn",
+          onComplete: () => {
+            gold.destroy();
+            onCollect();
+          },
+        });
+      },
+    });
+  }
+
+  private createGoldPickupVisual(x: number, y: number): Phaser.GameObjects.Sprite | Phaser.GameObjects.Image | Phaser.GameObjects.Arc {
+    if (this.scene.textures.exists(IMAGE_ASSETS.GOLD_PICKUP.key)) {
+      this.createGoldPickupAnimation();
+      const gold = this.scene.add
+        .sprite(x, y, IMAGE_ASSETS.GOLD_PICKUP.key)
+        .setDisplaySize(32, 32)
+        .setDepth(780);
+
+      if (this.scene.anims.exists("gold_pickup_anim")) {
+        gold.play("gold_pickup_anim");
+      }
+
+      return gold;
+    }
+
+    if (this.scene.textures.exists(IMAGE_ASSETS.GOLD_ICON.key)) {
+      return this.scene.add
+        .image(x, y, IMAGE_ASSETS.GOLD_ICON.key)
+        .setDisplaySize(20, 20)
+        .setDepth(780);
+    }
+
+    return this.scene.add
+      .circle(x, y, 9, 0xffd35a, 0.96)
+      .setStrokeStyle(2, 0x8a5618, 0.9)
+      .setDepth(780);
+  }
+
+  private createGoldPickupAnimation(): void {
+    if (!this.scene.textures.exists(IMAGE_ASSETS.GOLD_PICKUP.key) || this.scene.anims.exists("gold_pickup_anim")) {
+      return;
+    }
+
+    this.scene.anims.create({
+      key: "gold_pickup_anim",
+      frames: this.scene.anims.generateFrameNumbers(IMAGE_ASSETS.GOLD_PICKUP.key, {
+        start: 0,
+        end: 12,
+      }),
+      frameRate: 24,
+      repeat: -1,
+    });
+  }
+
   showDamageNumber(x: number, y: number, damage: number, color = "#fff1a8", isCritical = false): void {
     const damageText = this.scene.add
       .text(x, y, `${damage}`, {

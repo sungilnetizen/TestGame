@@ -25,6 +25,7 @@ type RunEndSystemOptions = {
   clearMonsters: () => void;
   resetCombo: () => void;
   createSelectedUpgradeSummary: () => string[];
+  getEarnedGold: () => number;
 };
 
 export class RunEndSystem {
@@ -34,7 +35,11 @@ export class RunEndSystem {
     if (this.options.gameStateSystem.isGameOver()) return;
 
     this.options.gameStateSystem.enterGameOver();
-    this.options.soundSystem.playSfx(SOUND_ASSETS.GAMEOVER.key);
+    if (result === "gameover") {
+      this.options.soundSystem.playSfx(SOUND_ASSETS.GAMEOVER.key);
+    } else {
+      this.options.soundSystem.playSfx(SOUND_ASSETS.GAMECLEAR.key);
+    }
     this.options.soundSystem.stopBgm();
     this.options.setPauseButtonVisible(false);
     this.options.pauseMenu.destroy();
@@ -45,7 +50,12 @@ export class RunEndSystem {
     const score = this.options.scoreSystem.getScore();
     const highestCombo = this.options.scoreSystem.getHighestCombo();
     const records = this.options.runRecordSystem.saveRun(score, highestCombo);
-    const progressionResult = ProgressionSystem.finishRun(this.options.runConfig, result, score);
+    const progressionResult = ProgressionSystem.finishRun(
+      this.options.runConfig,
+      result,
+      score,
+      this.options.getEarnedGold(),
+    );
     const gameOverData: GameOverData = {
       score,
       gold: progressionResult.gold,

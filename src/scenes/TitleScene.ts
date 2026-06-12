@@ -1,9 +1,12 @@
 import Phaser from "phaser";
-import { IMAGE_ASSETS } from "../assets/AssetManifest";
+import { IMAGE_ASSETS, SOUND_ASSETS } from "../assets/AssetManifest";
 import { balanceConfig } from "../config/balanceConfig";
 import { AssetLoader } from "../systems/AssetLoader";
+import { SoundSystem } from "../systems/SoundSystem";
 
 export class TitleScene extends Phaser.Scene {
+  private soundSystem!: SoundSystem;
+
   constructor() {
     super("TitleScene");
   }
@@ -13,6 +16,8 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.soundSystem = new SoundSystem(this);
+    this.soundSystem.playBgm(SOUND_ASSETS.BGM_TITLE.key);
     this.createBackdrop();
 
     this.add

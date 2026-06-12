@@ -113,6 +113,11 @@ export const balanceConfig = {
     upgradeSpawnPauseDuration: 330,
     upgradeFreezeTint: 0x6fb7ff,
     goldPerScore: 0.08,
+    monsterGoldDropChance: 0.45,
+    monsterGoldMin: 1,
+    monsterGoldMax: 4,
+    bossGoldMin: 20,
+    bossGoldMax: 38,
   },
   upgrades: {
     maxLevel: 4,

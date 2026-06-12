@@ -78,7 +78,7 @@ export class CombatResolutionSystem {
 
   private defeatMonster(monster: Monster, shouldCombo: boolean): void {
     this.options.attackSystem.forgetMonster(monster);
-    this.options.soundSystem.playSfx(SOUND_ASSETS.KILL.key);
+    this.options.soundSystem.playSfx(monster.type === "boss" ? SOUND_ASSETS.BOSS_DEFEAT.key : SOUND_ASSETS.KILL.key);
     this.createDefeatEffect(monster);
 
     if (shouldCombo) {

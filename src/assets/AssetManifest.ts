@@ -153,6 +153,20 @@ export const IMAGE_ASSETS = {
     key: "button_pause",
     path: "assets/images/ui/button_pause.png",
   },
+  GOLD_ICON: {
+    key: "gold_icon",
+    path: "assets/images/ui/gold_icon.png",
+  },
+  GOLD_PICKUP: {
+    key: "gold_pickup",
+    path: "assets/images/effects/gold_pickup.png",
+    frameConfig: {
+      frameWidth: 128,
+      frameHeight: 128,
+      startFrame: 0,
+      endFrame: 12,
+    },
+  },
   UPGRADE_FIRE_SWORD: {
     key: "upgrade_fire_sword",
     path: "assets/images/upgrades/fire_sword.png",
@@ -215,6 +229,26 @@ export const SOUND_ASSETS = {
   GAMEOVER: {
     key: "sfx_gameover",
     path: "assets/sounds/sfx/gameover.wav",
+  },
+  GAMECLEAR: {
+    key: "sfx_gameclear",
+    path: "assets/sounds/sfx/gameclear.wav",
+  },
+  BOSS_APPEAR: {
+    key: "sfx_boss_appear",
+    path: "assets/sounds/sfx/boss_appear.wav",
+  },
+  BOSS_DEFEAT: {
+    key: "sfx_boss_defeat",
+    path: "assets/sounds/sfx/boss_defeat.wav",
+  },
+  BGM_TITLE: {
+    key: "bgm_title",
+    path: "assets/sounds/bgm/title.mp3",
+  },
+  BGM_LOBBY: {
+    key: "bgm_lobby",
+    path: "assets/sounds/bgm/lobby.mp3",
   },
   BGM_BATTLE: {
     key: "bgm_battle",

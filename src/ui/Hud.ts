@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
+import { IMAGE_ASSETS } from "../assets/AssetManifest";
 
 export class Hud {
   private readonly waveText: Phaser.GameObjects.Text;
@@ -8,6 +9,8 @@ export class Hud {
   private readonly comboNumberText: Phaser.GameObjects.Text;
   private readonly comboLabelText: Phaser.GameObjects.Text;
   private readonly lifeText: Phaser.GameObjects.Text;
+  private readonly goldIcon: Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
+  private readonly goldText: Phaser.GameObjects.Text;
   private readonly burstText: Phaser.GameObjects.Text;
   private readonly scene: Phaser.Scene;
   private comboFadeTween?: Phaser.Tweens.Tween;
@@ -56,6 +59,14 @@ export class Hud {
       stroke: "#351017",
       strokeThickness: 4,
     }).setShadow(0, 2, "#16080c", 4, true, true).setDepth(1000);
+    this.goldIcon = this.createGoldIcon(24, 104).setDepth(1000);
+    this.goldText = scene.add.text(43, 94, "0", {
+      ...style,
+      fontSize: "17px",
+      color: "#ffd35a",
+      stroke: "#3d2410",
+      strokeThickness: 4,
+    }).setShadow(0, 2, "#160b04", 4, true, true).setDepth(1000);
     this.burstText = scene.add.text(276, 16, "Burst Ready", {
       ...style,
       fontSize: "13px",
@@ -69,6 +80,14 @@ export class Hud {
 
   setScore(score: number): void {
     this.scoreText.setText(`Score ${score}`);
+  }
+
+  setGold(gold: number): void {
+    this.goldText.setText(`${gold}`);
+  }
+
+  getGoldTargetPosition(): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(this.goldIcon.x, this.goldIcon.y);
   }
 
   setWave(wave: number): void {
@@ -120,6 +139,18 @@ export class Hud {
       duration: 650,
       ease: "Sine.easeOut",
     });
+  }
+
+  private createGoldIcon(x: number, y: number): Phaser.GameObjects.Image | Phaser.GameObjects.Arc {
+    if (this.scene.textures.exists(IMAGE_ASSETS.GOLD_ICON.key)) {
+      return this.scene.add
+        .image(x, y, IMAGE_ASSETS.GOLD_ICON.key)
+        .setDisplaySize(22, 22);
+    }
+
+    return this.scene.add
+      .circle(x, y, 10, 0xffd35a, 0.96)
+      .setStrokeStyle(2, 0x8a5618, 0.9);
   }
 
   private createLifeLabel(life: number): string {
