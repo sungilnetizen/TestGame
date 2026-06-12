@@ -9,6 +9,11 @@ export class AssetLoader {
     });
 
     for (const asset of imageAssetList) {
+      if ("frameConfig" in asset) {
+        scene.load.spritesheet(asset.key, asset.path, asset.frameConfig);
+        continue;
+      }
+
       scene.load.image(asset.key, asset.path);
     }
 

@@ -67,7 +67,7 @@ export class LobbyScene extends Phaser.Scene {
     this.createButton(318, 240, ">", 0x38475c, () => this.changeCharacter(1), 52, 52);
 
     if (this.textures.exists(IMAGE_ASSETS.PLAYER_IDLE.key)) {
-      this.add.image(195, 230, IMAGE_ASSETS.PLAYER_IDLE.key).setDisplaySize(104, 142);
+      this.add.image(195, 230, IMAGE_ASSETS.PLAYER_IDLE.key).setDisplaySize(142, 142);
     } else {
       this.add.rectangle(195, 230, 72, 106, 0x5fd0ff, 0.96);
     }

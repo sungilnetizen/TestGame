@@ -12,6 +12,7 @@ type MonsterOptions = {
 
 type DamageOptions = {
   impact?: boolean;
+  flashColor?: number;
 };
 
 type FreezeOptions = {
@@ -27,6 +28,8 @@ export class Monster extends Phaser.GameObjects.Container {
   private readonly collisionDebugBox: Phaser.GameObjects.Rectangle;
   private readonly maxHp: number;
   private sprite?: Phaser.GameObjects.Image;
+  private spriteTextureKey?: string;
+  private flashOverlay?: Phaser.GameObjects.Image;
   private bossHpBar?: Phaser.GameObjects.Graphics;
   private bossHpBarWidth = 0;
   private bossHpBarHeight = 0;
@@ -66,6 +69,7 @@ export class Monster extends Phaser.GameObjects.Container {
     const textureKey = scene.textures.exists(requestedTextureKey) ? requestedTextureKey : typeConfig.assetKey;
 
     if (scene.textures.exists(textureKey)) {
+      this.spriteTextureKey = textureKey;
       this.sprite = scene.add
         .image(0, 0, textureKey)
         .setDisplaySize(this.radius * 2, this.radius * 2);
@@ -139,7 +143,7 @@ export class Monster extends Phaser.GameObjects.Container {
       );
     }
 
-    this.flash();
+    this.flash(options.flashColor);
     this.playBossHitNudge();
 
     return this.hp <= 0;
@@ -205,16 +209,31 @@ export class Monster extends Phaser.GameObjects.Container {
     this.liftVelocity = Math.min(this.liftVelocity, -adjustedLiftVelocity);
   }
 
-  private flash(): void {
+  private flash(color = 0xffffff): void {
     if (this.destroyed) return;
 
     const hasSprite = Boolean(this.sprite);
 
-    if (hasSprite) {
-      this.sprite?.setTint(0xffffdd);
-      this.sprite?.setAlpha(1);
+    if (hasSprite && this.spriteTextureKey) {
+      this.flashOverlay?.destroy();
+      this.flashOverlay = this.scene.add
+        .image(0, 0, this.spriteTextureKey)
+        .setDisplaySize(this.radius * 2, this.radius * 2)
+        .setTintFill(color)
+        .setAlpha(0.58);
+      this.add(this.flashOverlay);
+      this.scene.tweens.add({
+        targets: this.flashOverlay,
+        alpha: 0,
+        duration: 110,
+        ease: "Sine.easeOut",
+        onComplete: () => {
+          this.flashOverlay?.destroy();
+          this.flashOverlay = undefined;
+        },
+      });
     } else {
-      this.core.setFillStyle(0xffffff);
+      this.core.setFillStyle(color);
     }
 
     this.scene.time.delayedCall(80, () => {
@@ -227,8 +246,6 @@ export class Monster extends Phaser.GameObjects.Container {
       }
 
       this.core.setFillStyle(this.baseColor);
-      this.sprite?.clearTint();
-      this.sprite?.setAlpha(1);
     });
   }
 

@@ -12,6 +12,9 @@ export type DamageMonsterOptions = {
   combo: boolean;
   impact: boolean;
   critical?: boolean;
+  flashColor?: number;
+  burnEffect?: boolean;
+  lightningEffect?: boolean;
 };
 
 type CombatResolutionOptions = {
@@ -32,7 +35,10 @@ export class CombatResolutionSystem {
     if (!this.options.enemySystem.includes(monster)) return false;
 
     const roundedDamage = Math.max(1, Math.round(damage));
-    const isDefeated = monster.takeDamage(roundedDamage, { impact: options.impact });
+    const isDefeated = monster.takeDamage(roundedDamage, {
+      impact: options.impact,
+      flashColor: options.flashColor,
+    });
     this.options.effectSystem.showDamageNumber(
       monster.x,
       monster.y - monster.radius,
@@ -40,6 +46,12 @@ export class CombatResolutionSystem {
       options.color,
       options.critical,
     );
+    if (options.burnEffect) {
+      this.options.effectSystem.createBurnEffect(monster.x, monster.y, monster.radius);
+    }
+    if (options.lightningEffect) {
+      this.options.effectSystem.createLightningHitEffect(monster.x, monster.y, monster.radius);
+    }
     this.showBossHitEffect(monster);
     this.applyScoreForHit(monster, isDefeated, options.combo);
 

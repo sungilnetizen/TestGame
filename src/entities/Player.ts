@@ -6,6 +6,11 @@ export class Player extends Phaser.GameObjects.Container {
   private readonly bodyBox: Phaser.GameObjects.Rectangle;
   private readonly collisionDebugBox: Phaser.GameObjects.Rectangle;
   private readonly shadow: Phaser.GameObjects.Ellipse;
+  private sprite?: Phaser.GameObjects.Sprite;
+  private idleTween?: Phaser.Tweens.Tween;
+  private spriteDisplaySize = 0;
+  private activeTextureKey?: string;
+  private attackAnimationToken = 0;
   private velocityY = 0;
   private grounded = true;
   private airAttackUsed = false;
@@ -44,11 +49,17 @@ export class Player extends Phaser.GameObjects.Container {
       .setStrokeStyle(2, 0xff3d3d, 0.42);
 
     if (scene.textures.exists(IMAGE_ASSETS.PLAYER_IDLE.key)) {
-      const sprite = scene.add
-        .image(0, -4, IMAGE_ASSETS.PLAYER_IDLE.key)
-        .setDisplaySize(balanceConfig.player.width * 1.8, balanceConfig.player.height * 1.7);
+      this.sprite = scene.add
+        .sprite(0, -4, IMAGE_ASSETS.PLAYER_IDLE.key)
+        .setDisplaySize(this.getSpriteDisplaySize(), this.getSpriteDisplaySize());
+      this.sprite.setOrigin(0.5, 1);
+      this.sprite.setY(this.sprite.y + this.sprite.displayHeight / 2);
+      this.activeTextureKey = IMAGE_ASSETS.PLAYER_IDLE.key;
+      this.createJumpAnimation();
+      this.createAttackAnimation();
       this.bodyBox.setVisible(false);
-      this.add([sprite, this.bodyBox, this.collisionDebugBox]);
+      this.add([this.sprite, this.bodyBox, this.collisionDebugBox]);
+      this.createIdleTween();
     } else {
       const helm = scene.add.rectangle(0, -25, 22, 10, 0xf3d88b);
       const blade = scene.add.rectangle(20, -10, 5, 42, 0xe9edf6);
@@ -65,6 +76,9 @@ export class Player extends Phaser.GameObjects.Container {
     this.grounded = false;
     this.airAttackUsed = false;
     this.airBrakeUntil = -Infinity;
+    this.setPlayerTexture(IMAGE_ASSETS.PLAYER_JUMP.key);
+    this.playJumpAnimation();
+    this.stopIdleTween();
   }
 
   softenJumpFromAttack(): void {
@@ -76,6 +90,22 @@ export class Player extends Phaser.GameObjects.Container {
       this.velocityY *= balanceConfig.combat.airAttackVelocityMultiplier;
       this.airBrakeUntil = this.scene.time.now + balanceConfig.combat.airAttackBrakeDuration;
     }
+  }
+
+  playAttackAnimation(): void {
+    if (!this.sprite || !this.scene.textures.exists(IMAGE_ASSETS.PLAYER_ATTACK.key)) return;
+
+    this.attackAnimationToken += 1;
+    const attackToken = this.attackAnimationToken;
+    this.stopIdleTween();
+    this.setPlayerTexture(IMAGE_ASSETS.PLAYER_ATTACK.key, 1.5);
+
+    if (!this.scene.anims.exists("player_attack_anim")) {
+      return;
+    }
+
+    this.sprite.play("player_attack_anim");
+    this.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => this.restoreAfterAttack(attackToken));
   }
 
   forceFall(): void {
@@ -98,9 +128,14 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.y >= balanceConfig.player.startY) {
       this.y = balanceConfig.player.startY;
       this.velocityY = 0;
+      const didLand = !this.grounded;
       this.grounded = true;
       this.airAttackUsed = false;
       this.airBrakeUntil = -Infinity;
+
+      if (didLand) {
+        this.restoreGroundedVisual();
+      }
     }
 
     this.updateShadow();
@@ -129,8 +164,110 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   destroy(fromScene?: boolean): void {
+    this.stopIdleTween();
     this.shadow.destroy();
     super.destroy(fromScene);
+  }
+
+  private createIdleTween(): void {
+    if (!this.sprite) return;
+
+    this.stopIdleTween();
+    this.idleTween = this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: this.sprite.scaleX * 0.985,
+      scaleY: this.sprite.scaleY * 1.018,
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private stopIdleTween(): void {
+    this.idleTween?.stop();
+    this.idleTween = undefined;
+    if (!this.sprite) return;
+
+    this.sprite.setScale(1);
+    this.sprite.setDisplaySize(this.getSpriteDisplaySize(), this.getSpriteDisplaySize());
+  }
+
+  private setPlayerTexture(textureKey: string, sizeMultiplier = 1): void {
+    if (!this.sprite || !this.scene.textures.exists(textureKey)) return;
+
+    this.sprite.stop();
+    if (this.activeTextureKey !== textureKey) {
+      this.sprite.setTexture(textureKey);
+    }
+    this.sprite.setDisplaySize(
+      this.getSpriteDisplaySize() * sizeMultiplier,
+      this.getSpriteDisplaySize() * sizeMultiplier,
+    );
+    this.activeTextureKey = textureKey;
+  }
+
+  private createJumpAnimation(): void {
+    if (!this.scene.textures.exists(IMAGE_ASSETS.PLAYER_JUMP.key) || this.scene.anims.exists("player_jump_anim")) {
+      return;
+    }
+
+    this.scene.anims.create({
+      key: "player_jump_anim",
+      frames: this.scene.anims.generateFrameNumbers(IMAGE_ASSETS.PLAYER_JUMP.key, {
+        start: 0,
+        end: 8,
+      }),
+      frameRate: 14,
+      repeat: -1,
+    });
+  }
+
+  private playJumpAnimation(): void {
+    if (!this.sprite || !this.scene.anims.exists("player_jump_anim")) return;
+
+    this.sprite.play("player_jump_anim");
+  }
+
+  private createAttackAnimation(): void {
+    if (!this.scene.textures.exists(IMAGE_ASSETS.PLAYER_ATTACK.key) || this.scene.anims.exists("player_attack_anim")) {
+      return;
+    }
+
+    this.scene.anims.create({
+      key: "player_attack_anim",
+      frames: this.scene.anims.generateFrameNumbers(IMAGE_ASSETS.PLAYER_ATTACK.key, {
+        start: 0,
+        end: 2,
+      }),
+      frameRate: 18,
+      repeat: 0,
+    });
+  }
+
+  private restoreAfterAttack(attackToken: number): void {
+    if (!this.sprite || attackToken !== this.attackAnimationToken || this.activeTextureKey !== IMAGE_ASSETS.PLAYER_ATTACK.key) return;
+
+    if (this.grounded) {
+      this.restoreGroundedVisual();
+      return;
+    }
+
+    this.setPlayerTexture(IMAGE_ASSETS.PLAYER_JUMP.key);
+    this.playJumpAnimation();
+  }
+
+  private restoreGroundedVisual(): void {
+    this.setPlayerTexture(IMAGE_ASSETS.PLAYER_IDLE.key);
+    this.createIdleTween();
+  }
+
+  private getSpriteDisplaySize(): number {
+    if (this.spriteDisplaySize <= 0) {
+      this.spriteDisplaySize = balanceConfig.player.height * 1.7;
+    }
+
+    return this.spriteDisplaySize;
   }
 
   private updateShadow(): void {

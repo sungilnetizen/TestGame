@@ -27,6 +27,7 @@ import { RunConfigSystem } from "../systems/RunConfigSystem";
 import { UpgradeFlowSystem } from "../systems/UpgradeFlowSystem";
 import {
   defaultRunUpgradeState,
+  maxUpgradeLevel,
   RunUpgradeState,
   UpgradeSystem,
 } from "../systems/UpgradeSystem";
@@ -110,6 +111,7 @@ export class GameScene extends Phaser.Scene {
       () => this.togglePause(),
       () => this.toggleDebugVisible(),
       () => this.jumpToNextBossWave(),
+      () => this.increaseLightningSwordDebug(),
     );
     this.touchControls = new TouchControls(this, (action) => this.handleControl(action));
     this.upgradeStatusList = new UpgradeStatusList(this, this.upgradeSystem.getAllUpgrades(), {
@@ -325,22 +327,40 @@ export class GameScene extends Phaser.Scene {
     this.player?.setDebugVisible(this.debugVisible);
     this.enemySystem?.setDebugVisible(this.debugVisible);
     this.effectSystem?.setDebugVisible(this.debugVisible);
+    this.attackSystem?.setDebugVisible(this.debugVisible);
   }
 
   private jumpToNextBossWave(): void {
     if (this.gameStateSystem.blocksGameplay()) return;
 
     const currentWave = this.waveSystem.currentWaveNumber;
-    const interval = balanceConfig.boss.waveInterval;
-    const nextBossWave = Math.min(
-      balanceConfig.waves.count,
-      Math.max(interval, (Math.floor(currentWave / interval) + 1) * interval),
-    );
+    const nextBossWave = this.runConfig.modeDefinition.bossWaveRule === "stage-final"
+      ? this.runConfig.maxWave ?? currentWave
+      : this.getNextIntervalBossWave(currentWave);
 
     this.clearMonsters();
     this.waveSystem.jumpToWave(nextBossWave);
     this.hud.setWave(this.waveSystem.currentWaveNumber);
     this.effectSystem.createWaveAdvanceEffect(this.waveSystem.currentWaveNumber);
+  }
+
+  private increaseLightningSwordDebug(): void {
+    if (this.gameStateSystem.blocksGameplay()) return;
+
+    const nextLevel = Math.min(maxUpgradeLevel, this.upgradeState.lightningSword + 1);
+    if (nextLevel === this.upgradeState.lightningSword) return;
+
+    this.upgradeState.lightningSword = nextLevel;
+    this.upgradeStatusList.refresh(this.upgradeState);
+  }
+
+  private getNextIntervalBossWave(currentWave: number): number {
+    const interval = balanceConfig.boss.waveInterval;
+
+    return Math.min(
+      balanceConfig.waves.count,
+      Math.max(interval, (Math.floor(currentWave / interval) + 1) * interval),
+    );
   }
 
   private recordMonsterKill(monster: Monster): void {

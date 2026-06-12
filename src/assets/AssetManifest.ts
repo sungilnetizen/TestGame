@@ -1,6 +1,7 @@
 export type AssetEntry = {
   key: string;
   path: string;
+  frameConfig?: Phaser.Types.Loader.FileTypes.ImageFrameConfig;
 };
 
 export const IMAGE_ASSETS = {
@@ -16,9 +17,25 @@ export const IMAGE_ASSETS = {
     key: "player_idle",
     path: "assets/images/player/player_idle.png",
   },
+  PLAYER_JUMP: {
+    key: "player_jump",
+    path: "assets/images/player/player_jump.png",
+    frameConfig: {
+      frameWidth: 128,
+      frameHeight: 128,
+      startFrame: 0,
+      endFrame: 8,
+    },
+  },
   PLAYER_ATTACK: {
     key: "player_attack",
     path: "assets/images/player/player_attack.png",
+    frameConfig: {
+      frameWidth: 128,
+      frameHeight: 128,
+      startFrame: 0,
+      endFrame: 2,
+    },
   },
   ENEMY_SMALL: {
     key: "enemy_small",
@@ -83,6 +100,18 @@ export const IMAGE_ASSETS = {
   SLASH_MARK: {
     key: "slash_mark",
     path: "assets/images/effects/slash_mark.png",
+  },
+  FIRE_BURN: {
+    key: "fire_burn",
+    path: "assets/images/effects/fire_burn.png",
+  },
+  LIGHTNING_CHAIN: {
+    key: "lightning_chain",
+    path: "assets/images/effects/lightning_chain.png",
+  },
+  LIGHTNING_HIT: {
+    key: "lightning_hit",
+    path: "assets/images/effects/lightning_hit.png",
   },
   UPGRADE_CARD_BG: {
     key: "upgrade_card_bg",

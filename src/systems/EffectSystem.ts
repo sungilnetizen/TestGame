@@ -269,6 +269,92 @@ export class EffectSystem {
     });
   }
 
+  createBurnEffect(x: number, y: number, monsterRadius: number): void {
+    const effectY = y - monsterRadius * 0.45;
+    const flameSize = Phaser.Math.Clamp(monsterRadius * 1.1, 28, 96);
+
+    if (this.scene.textures.exists(IMAGE_ASSETS.FIRE_BURN.key)) {
+      const flame = this.scene.add
+        .image(x, effectY, IMAGE_ASSETS.FIRE_BURN.key)
+        .setDisplaySize(flameSize, flameSize)
+        .setAlpha(0.96)
+        .setDepth(720);
+
+      this.scene.tweens.add({
+        targets: flame,
+        y: effectY - monsterRadius * 0.45,
+        alpha: 0,
+        scaleX: flame.scaleX * 1.2,
+        scaleY: flame.scaleY * 1.2,
+        duration: 340,
+        ease: "Sine.easeOut",
+        onComplete: () => flame.destroy(),
+      });
+      return;
+    }
+
+    const flame = this.scene.add.graphics({ x, y: effectY }).setDepth(720);
+    flame.fillStyle(0xff3f24, 0.72);
+    flame.fillCircle(0, 0, flameSize * 0.28);
+    flame.fillStyle(0xffb02e, 0.82);
+    flame.fillCircle(0, -flameSize * 0.14, flameSize * 0.22);
+    flame.fillStyle(0xfff0a0, 0.9);
+    flame.fillCircle(0, -flameSize * 0.24, flameSize * 0.12);
+
+    this.scene.tweens.add({
+      targets: flame,
+      y: effectY - monsterRadius * 0.45,
+      alpha: 0,
+      scaleX: 1.24,
+      scaleY: 1.24,
+      duration: 340,
+      ease: "Sine.easeOut",
+      onComplete: () => flame.destroy(),
+    });
+  }
+
+  createLightningHitEffect(x: number, y: number, monsterRadius: number): void {
+    const effectSize = Phaser.Math.Clamp(monsterRadius * 1.95, 56, 184);
+
+    if (this.scene.textures.exists(IMAGE_ASSETS.LIGHTNING_HIT.key)) {
+      const lightning = this.scene.add
+        .image(x, y, IMAGE_ASSETS.LIGHTNING_HIT.key)
+        .setDisplaySize(effectSize, effectSize)
+        .setAlpha(0.98)
+        .setDepth(590);
+
+      this.scene.tweens.add({
+        targets: lightning,
+        alpha: 0,
+        scaleX: lightning.scaleX * 1.22,
+        scaleY: lightning.scaleY * 1.22,
+        duration: 260,
+        ease: "Sine.easeOut",
+        onComplete: () => lightning.destroy(),
+      });
+      return;
+    }
+
+    const spark = this.scene.add.graphics({ x, y }).setDepth(590);
+    spark.lineStyle(4, 0x76d8ff, 0.92);
+    spark.beginPath();
+    spark.moveTo(0, -effectSize * 0.45);
+    spark.lineTo(-effectSize * 0.12, -effectSize * 0.08);
+    spark.lineTo(effectSize * 0.1, -effectSize * 0.08);
+    spark.lineTo(-effectSize * 0.04, effectSize * 0.42);
+    spark.strokePath();
+
+    this.scene.tweens.add({
+      targets: spark,
+      alpha: 0,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 260,
+      ease: "Sine.easeOut",
+      onComplete: () => spark.destroy(),
+    });
+  }
+
   showDamageNumber(x: number, y: number, damage: number, color = "#fff1a8", isCritical = false): void {
     const damageText = this.scene.add
       .text(x, y, `${damage}`, {

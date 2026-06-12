@@ -11,6 +11,9 @@ type DamageMonsterOptions = {
   combo: boolean;
   impact: boolean;
   critical?: boolean;
+  flashColor?: number;
+  burnEffect?: boolean;
+  lightningEffect?: boolean;
 };
 
 type AttackOptions = {
@@ -24,6 +27,7 @@ type AttackOptions = {
 export class AttackSystem {
   private lastAttackAt = -Infinity;
   private readonly burnTokens = new Map<Monster, number>();
+  private debugVisible = true;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -40,6 +44,10 @@ export class AttackSystem {
     this.burnTokens.delete(monster);
   }
 
+  setDebugVisible(visible: boolean): void {
+    this.debugVisible = visible;
+  }
+
   tryAttack(options: AttackOptions): void {
     const now = this.scene.time.now;
     if (now - this.lastAttackAt < this.getAttackCooldown(options.upgradeState)) return;
@@ -47,6 +55,7 @@ export class AttackSystem {
     this.lastAttackAt = now;
     const isGroundAttack = options.player.isGrounded();
     const attackDamageMultiplier = isGroundAttack ? balanceConfig.combat.groundAttackDamageMultiplier : 1;
+    options.player.playAttackAnimation();
     options.player.softenJumpFromAttack();
 
     const attackCenterX = options.player.x;
@@ -68,16 +77,16 @@ export class AttackSystem {
           critical: attackDamage.isCritical,
         });
 
+        if (options.upgradeState.lightningSword > 0) {
+          this.chainLightning(monster, attackDamageMultiplier, options);
+        }
+
         if (isDefeated) {
           continue;
         }
 
         if (options.upgradeState.fireSword > 0) {
           this.applyBurn(monster, attackDamageMultiplier, options);
-        }
-
-        if (options.upgradeState.lightningSword > 0) {
-          this.chainLightning(monster, attackDamageMultiplier, options);
         }
       }
     }
@@ -134,6 +143,7 @@ export class AttackSystem {
     );
 
     if (this.scene.textures.exists(IMAGE_ASSETS.SLASH_BASIC.key)) {
+      slashRange.setAlpha(this.debugVisible ? 1 : 0);
       const slashImage = this.scene.add
         .image(attackCenterX, attackCenterY, IMAGE_ASSETS.SLASH_BASIC.key)
         .setDisplaySize(attackRadius * 2, attackRadius * 2)
@@ -143,15 +153,33 @@ export class AttackSystem {
         attackCenterY,
         attackRadius,
         attackArcStart,
-        attackArcEnd,
+        attackArcStart,
       );
       const mask = maskGraphics.createGeometryMask();
       slashImage.setMask(mask);
+      const revealState = { progress: 0 };
 
       this.scene.tweens.add({
-        targets: [slashImage, slashRange],
+        targets: revealState,
+        progress: 1,
+        duration: Math.max(60, balanceConfig.combat.slashDuration * 0.72),
+        ease: "Quad.easeOut",
+        onUpdate: () => {
+          this.redrawSlashMask(
+            maskGraphics,
+            attackCenterX,
+            attackCenterY,
+            attackRadius,
+            attackArcStart,
+            Phaser.Math.Linear(attackArcStart, attackArcEnd, revealState.progress),
+          );
+        },
+      });
+      this.scene.tweens.add({
+        targets: this.debugVisible ? slashImage : [slashImage, slashRange],
         alpha: 0,
         duration: balanceConfig.combat.slashDuration,
+        delay: Math.max(20, balanceConfig.combat.slashDuration * 0.28),
         onComplete: () => {
           slashImage.destroy();
           slashRange.destroy();
@@ -161,6 +189,7 @@ export class AttackSystem {
       return;
     }
 
+    slashRange.setAlpha(this.debugVisible ? 1 : 0);
     this.scene.tweens.add({
       targets: slashRange,
       alpha: 0,
@@ -206,6 +235,27 @@ export class AttackSystem {
     attackArcEnd: number,
   ): Phaser.GameObjects.Graphics {
     const maskGraphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
+    this.redrawSlashMask(
+      maskGraphics,
+      attackCenterX,
+      attackCenterY,
+      attackRadius,
+      attackArcStart,
+      attackArcEnd,
+    );
+
+    return maskGraphics;
+  }
+
+  private redrawSlashMask(
+    maskGraphics: Phaser.GameObjects.Graphics,
+    attackCenterX: number,
+    attackCenterY: number,
+    attackRadius: number,
+    attackArcStart: number,
+    attackArcEnd: number,
+  ): void {
+    maskGraphics.clear();
     maskGraphics.fillStyle(0xffffff, 1);
     maskGraphics.beginPath();
     maskGraphics.moveTo(attackCenterX, attackCenterY);
@@ -220,8 +270,6 @@ export class AttackSystem {
 
     maskGraphics.closePath();
     maskGraphics.fillPath();
-
-    return maskGraphics;
   }
 
   private applyBurn(monster: Monster, attackDamageMultiplier: number, options: AttackOptions): void {
@@ -253,6 +301,8 @@ export class AttackSystem {
           combo: false,
           impact: false,
           critical: false,
+          flashColor: 0xff3f24,
+          burnEffect: true,
         });
       });
     }
@@ -262,16 +312,72 @@ export class AttackSystem {
     const maxChainDistance =
       balanceConfig.combat.lightningSwordBaseRange +
       options.upgradeState.lightningSword * balanceConfig.combat.lightningSwordLevelRange;
-    const target = options.getMonsters()
-      .filter((monster) => monster !== source)
+    const maxChainCount =
+      balanceConfig.combat.lightningSwordBaseChainCount +
+      Math.max(0, options.upgradeState.lightningSword - 1) * balanceConfig.combat.lightningSwordChainCountPerLevel;
+    const chainedMonsters = new Set<Monster>([source]);
+    let chainSource = source;
+
+    for (let chainIndex = 0; chainIndex < maxChainCount; chainIndex += 1) {
+      const target = this.findLightningTarget(chainSource, maxChainDistance, chainedMonsters, options);
+
+      if (!target) return;
+
+      chainedMonsters.add(target);
+      this.createLightningChainEffect(chainSource, target);
+      options.damageMonster(target, this.getAttackDamage() * attackDamageMultiplier * (balanceConfig.combat.lightningSwordBaseDamageRate + options.upgradeState.lightningSword * balanceConfig.combat.lightningSwordLevelDamageRate), {
+        color: "#76d8ff",
+        combo: true,
+        impact: true,
+        critical: false,
+        flashColor: 0x76d8ff,
+        lightningEffect: true,
+      });
+      chainSource = target;
+    }
+  }
+
+  private findLightningTarget(
+    source: Monster,
+    maxChainDistance: number,
+    chainedMonsters: Set<Monster>,
+    options: AttackOptions,
+  ): Monster | undefined {
+    return options.getMonsters()
+      .filter((monster) => !chainedMonsters.has(monster))
       .map((monster) => ({
         monster,
         distance: Phaser.Math.Distance.Between(source.x, source.y, monster.x, monster.y),
       }))
       .filter((candidate) => candidate.distance <= maxChainDistance)
       .sort((a, b) => a.distance - b.distance)[0]?.monster;
+  }
 
-    if (!target) return;
+  private createLightningChainEffect(source: Monster, target: Monster): void {
+    const distance = Phaser.Math.Distance.Between(source.x, source.y, target.x, target.y);
+    const angle = Phaser.Math.Angle.Between(source.x, source.y, target.x, target.y);
+    const midX = (source.x + target.x) / 2;
+    const midY = (source.y + target.y) / 2;
+
+    if (this.scene.textures.exists(IMAGE_ASSETS.LIGHTNING_CHAIN.key)) {
+      const lightning = this.scene.add
+        .image(midX, midY, IMAGE_ASSETS.LIGHTNING_CHAIN.key)
+        .setOrigin(0.5)
+        .setRotation(angle)
+        .setDisplaySize(distance, Math.max(46, Math.min(104, distance * 0.34)))
+        .setAlpha(0.95)
+        .setDepth(700);
+
+      this.scene.tweens.add({
+        targets: lightning,
+        alpha: 0,
+        scaleY: lightning.scaleY * 1.18,
+        duration: balanceConfig.combat.lightningSwordEffectDuration,
+        ease: "Sine.easeOut",
+        onComplete: () => lightning.destroy(),
+      });
+      return;
+    }
 
     const line = this.scene.add
       .line(0, 0, source.x, source.y, target.x, target.y, 0x76d8ff, 0.95)
@@ -284,13 +390,6 @@ export class AttackSystem {
       alpha: 0,
       duration: balanceConfig.combat.lightningSwordEffectDuration,
       onComplete: () => line.destroy(),
-    });
-
-    options.damageMonster(target, this.getAttackDamage() * attackDamageMultiplier * (balanceConfig.combat.lightningSwordBaseDamageRate + options.upgradeState.lightningSword * balanceConfig.combat.lightningSwordLevelDamageRate), {
-      color: "#76d8ff",
-      combo: true,
-      impact: true,
-      critical: false,
     });
   }
 
