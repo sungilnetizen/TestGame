@@ -110,6 +110,7 @@ export const balanceConfig = {
     upgradeFreezeDuration: 270,
     upgradeSpawnPauseDuration: 330,
     upgradeFreezeTint: 0x6fb7ff,
+    goldPerScore: 0.08,
   },
   upgrades: {
     maxLevel: 4,

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { balanceConfig } from "./balanceConfig";
+import { TitleScene } from "../scenes/TitleScene";
+import { MainMenuScene } from "../scenes/MainMenuScene";
+import { LobbyScene } from "../scenes/LobbyScene";
 import { GameScene } from "../scenes/GameScene";
 import { GameOverScene } from "../scenes/GameOverScene";
 
@@ -20,5 +23,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [GameScene, GameOverScene],
+  scene: [TitleScene, MainMenuScene, LobbyScene, GameScene, GameOverScene],
 };

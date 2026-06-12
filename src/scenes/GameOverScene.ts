@@ -18,17 +18,25 @@ export class GameOverScene extends Phaser.Scene {
     );
 
     this.add
-      .text(balanceConfig.world.width / 2, 92, "Game Over", {
+      .text(balanceConfig.world.width / 2, 84, data.result === "clear" ? "CLEAR" : "GAME OVER", {
         fontFamily: "monospace",
         fontSize: "34px",
-        color: "#ffb8a8",
+        color: data.result === "clear" ? "#cdf4ff" : "#ffb8a8",
         stroke: "#331615",
         strokeThickness: 6,
       })
       .setOrigin(0.5);
 
     this.add
-      .text(balanceConfig.world.width / 2, 148, `Score ${data.score}`, {
+      .text(balanceConfig.world.width / 2, 132, `${data.stageName} / ${data.mode.toUpperCase()}`, {
+        fontFamily: "monospace",
+        fontSize: "15px",
+        color: "#f4efe2",
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(balanceConfig.world.width / 2, 166, `Score ${data.score}`, {
         fontFamily: "monospace",
         fontSize: "20px",
         color: "#fff1a8",
@@ -36,7 +44,15 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(balanceConfig.world.width / 2, 178, `Best Score ${data.bestScore}`, {
+      .text(balanceConfig.world.width / 2, 196, `Gold +${data.gold}`, {
+        fontFamily: "monospace",
+        fontSize: "18px",
+        color: "#ffd35a",
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(balanceConfig.world.width / 2, 226, `Best Score ${data.bestScore}`, {
         fontFamily: "monospace",
         fontSize: "15px",
         color: "#f4efe2",
@@ -44,7 +60,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(balanceConfig.world.width / 2, 212, `Wave ${data.wave}  Combo ${data.highestCombo}`, {
+      .text(balanceConfig.world.width / 2, 256, `Wave ${data.wave}  Combo ${data.highestCombo}`, {
         fontFamily: "monospace",
         fontSize: "16px",
         color: "#cdf4ff",
@@ -52,7 +68,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(balanceConfig.world.width / 2, 240, `Best Combo ${data.bestCombo}`, {
+      .text(balanceConfig.world.width / 2, 284, `Best Combo ${data.bestCombo}`, {
         fontFamily: "monospace",
         fontSize: "15px",
         color: "#f4efe2",
@@ -60,7 +76,26 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(54, 294, "Upgrades", {
+      .text(54, 330, "Unlock", {
+        fontFamily: "monospace",
+        fontSize: "17px",
+        color: "#fff1a8",
+      })
+      .setOrigin(0, 0.5);
+
+    const unlockLines = data.unlockMessages.length > 0 ? data.unlockMessages : ["No new unlocks"];
+    unlockLines.slice(0, 3).forEach((line, index) => {
+      this.add
+        .text(54, 360 + index * 24, line, {
+          fontFamily: "monospace",
+          fontSize: "13px",
+          color: "#f4efe2",
+        })
+        .setOrigin(0, 0.5);
+    });
+
+    this.add
+      .text(54, 448, "Upgrades", {
         fontFamily: "monospace",
         fontSize: "17px",
         color: "#cdf4ff",
@@ -71,26 +106,26 @@ export class GameOverScene extends Phaser.Scene {
 
     upgradeLines.slice(0, 12).forEach((line, index) => {
       this.add
-        .text(54, 326 + index * 26, line, {
+        .text(54, 480 + index * 20, line, {
           fontFamily: "monospace",
-          fontSize: "14px",
+          fontSize: "12px",
           color: "#f4efe2",
         })
         .setOrigin(0, 0.5);
     });
 
-    const restartButton = this.add
+    const lobbyButton = this.add
       .rectangle(balanceConfig.world.width / 2, 746, 174, 54, 0x2e6658, 0.96)
       .setStrokeStyle(2, 0xf4efe2, 0.8)
       .setInteractive({ useHandCursor: true });
     this.add
-      .text(balanceConfig.world.width / 2, 746, "Restart", {
+      .text(balanceConfig.world.width / 2, 746, "Lobby", {
         fontFamily: "monospace",
         fontSize: "18px",
         color: "#fff8df",
       })
       .setOrigin(0.5);
 
-    restartButton.on("pointerdown", () => this.scene.start("GameScene", { autoStart: true }));
+    lobbyButton.on("pointerdown", () => this.scene.start("LobbyScene"));
   }
 }

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { balanceConfig } from "../config/balanceConfig";
 import { enemyDefinitions, type EnemyType } from "../data/enemies";
 import { waveConfigs } from "../data/waves";
+import type { GameRunConfig } from "../types/GameRunTypes";
 
 export type MonsterType = EnemyType;
 
@@ -22,9 +23,19 @@ export class WaveSystem {
   private spawnPausedUntil = -Infinity;
   private bossSpawned = false;
   private bossDefeated = false;
+  private runConfig?: GameRunConfig;
 
   get currentWaveNumber(): number {
     return this.currentWave.wave;
+  }
+
+  get isComplete(): boolean {
+    return Boolean(this.runConfig?.maxWave && this.currentWaveNumber >= this.runConfig.maxWave && this.bossDefeated);
+  }
+
+  configure(runConfig: GameRunConfig): void {
+    this.runConfig = runConfig;
+    this.reset();
   }
 
   createSpawns(time: number, aliveCount: number): MonsterSpawn[] {
@@ -71,8 +82,8 @@ export class WaveSystem {
       spawns.push({
         x,
         y: balanceConfig.waves.spawnStartY - i * balanceConfig.waves.spawnStackSpacing,
-        hp: Math.round(wave.monsterHp * typeConfig.hpMultiplier),
-        fallSpeed: wave.fallSpeed * typeConfig.speedMultiplier,
+        hp: Math.round(wave.monsterHp * typeConfig.hpMultiplier * (this.runConfig?.difficultyMultiplier ?? 1)),
+        fallSpeed: wave.fallSpeed * typeConfig.speedMultiplier * Math.sqrt(this.runConfig?.difficultyMultiplier ?? 1),
         type: monsterType,
       });
     }
@@ -102,11 +113,15 @@ export class WaveSystem {
   }
 
   isBossWave(waveNumber = this.currentWaveNumber): boolean {
+    if (this.runConfig?.modeDefinition.bossWaveRule === "stage-final") {
+      return waveNumber === this.runConfig.maxWave;
+    }
+
     return waveNumber % balanceConfig.boss.waveInterval === 0;
   }
 
   private tryAdvanceWave(previousWave: number): boolean {
-    while (this.waveIndex < waveConfigs.length - 1) {
+    while (this.waveIndex < this.getMaxWaveIndex()) {
       const isBossWave = this.isBossWave();
       const canAdvance = isBossWave
         ? this.bossDefeated
@@ -136,7 +151,7 @@ export class WaveSystem {
   }
 
   jumpToWave(waveNumber: number): void {
-    const targetIndex = Phaser.Math.Clamp(Math.floor(waveNumber) - 1, 0, waveConfigs.length - 1);
+    const targetIndex = Phaser.Math.Clamp(Math.floor(waveNumber) - 1, 0, this.getMaxWaveIndex());
     this.waveIndex = targetIndex;
     this.killsInWave = 0;
     this.lastSpawnAt = -Infinity;
@@ -153,10 +168,18 @@ export class WaveSystem {
     return waveConfigs[this.waveIndex];
   }
 
+  private getMaxWaveIndex(): number {
+    const maxWave = this.runConfig?.maxWave ?? waveConfigs.length;
+    return Phaser.Math.Clamp(maxWave - 1, 0, waveConfigs.length - 1);
+  }
+
   private createBossSpawn(fallSpeed: number): MonsterSpawn {
     const bossWaveIndex = Math.max(0, Math.floor(this.currentWaveNumber / balanceConfig.boss.waveInterval) - 1);
+    const difficultyMultiplier = this.runConfig?.difficultyMultiplier ?? 1;
     const bossHp = Math.round(
-      balanceConfig.boss.baseHp * (1 + bossWaveIndex * balanceConfig.boss.hpMultiplierPerBossWave),
+      balanceConfig.boss.baseHp *
+        difficultyMultiplier *
+        (1 + bossWaveIndex * balanceConfig.boss.hpMultiplierPerBossWave),
     );
     const typeConfig = enemyDefinitions.boss;
 
@@ -172,6 +195,10 @@ export class WaveSystem {
   }
 
   private getBossTextureKey(): string {
+    if (this.runConfig?.modeDefinition.bossWaveRule === "stage-final") {
+      return this.runConfig.stage.bossAssetKey;
+    }
+
     if (this.currentWaveNumber <= balanceConfig.boss.waveInterval) {
       return enemyDefinitions.boss.assetKey;
     }

@@ -8,7 +8,7 @@ type PauseMenuOptions = {
   soundEnabled: boolean;
   onResume: () => void;
   onToggleSound: () => void;
-  onOpenShop: () => void;
+  onReturnLobby: () => void;
   onRestart: () => void;
   onQuitToTitle: () => void;
 };
@@ -48,7 +48,7 @@ export class PauseMenu {
     const resume = this.createButton(195, 284, "RESUME", 0x2e6658, IMAGE_ASSETS.BUTTON_PRIMARY.key, options.onResume);
     const sound = this.createButton(195, 350, this.soundLabel(options.soundEnabled), 0x38475c, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onToggleSound);
     this.soundText = sound.text;
-    const shop = this.createButton(195, 416, "SHOP", 0x59428e, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onOpenShop);
+    const lobby = this.createButton(195, 416, "LOBBY", 0x59428e, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onReturnLobby);
     const restart = this.createButton(195, 482, "RESTART", 0x70512b, IMAGE_ASSETS.BUTTON_SECONDARY.key, options.onRestart);
     const quit = this.createButton(195, 548, "QUIT TO TITLE", 0x733535, IMAGE_ASSETS.BUTTON_DANGER.key, options.onQuitToTitle);
 
@@ -59,8 +59,8 @@ export class PauseMenu {
       resume.text,
       sound.button,
       sound.text,
-      shop.button,
-      shop.text,
+      lobby.button,
+      lobby.text,
       restart.button,
       restart.text,
       quit.button,
