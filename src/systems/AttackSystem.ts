@@ -68,7 +68,11 @@ export class AttackSystem {
           critical: attackDamage.isCritical,
         });
 
-        if (!isDefeated && options.upgradeState.fireSword > 0) {
+        if (isDefeated) {
+          continue;
+        }
+
+        if (options.upgradeState.fireSword > 0) {
           this.applyBurn(monster, attackDamageMultiplier, options);
         }
 
@@ -133,7 +137,7 @@ export class AttackSystem {
       const slashImage = this.scene.add
         .image(attackCenterX, attackCenterY, IMAGE_ASSETS.SLASH_BASIC.key)
         .setDisplaySize(attackRadius * 2, attackRadius * 2)
-        .setDepth(431);
+        .setDepth(691);
       const maskGraphics = this.createSlashMask(
         attackCenterX,
         attackCenterY,
@@ -173,7 +177,7 @@ export class AttackSystem {
     attackArcEnd: number,
     upgradeState: RunUpgradeState,
   ): Phaser.GameObjects.Graphics {
-    const slash = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY }).setDepth(430);
+    const slash = this.scene.add.graphics({ x: attackCenterX, y: attackCenterY }).setDepth(690);
     slash.fillStyle(upgradeState.fireSword > 0 ? 0xff6236 : 0xffe071, 0.2);
     slash.lineStyle(4, upgradeState.fireSword > 0 ? 0xffb15c : 0xfff6b0, 0.78);
     slash.beginPath();

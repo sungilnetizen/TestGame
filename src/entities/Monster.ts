@@ -40,12 +40,14 @@ export class Monster extends Phaser.GameObjects.Container {
   private slowedFrom = -Infinity;
   private slowedUntil = -Infinity;
   private frozenUntil = -Infinity;
+  private destroyed = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, options: MonsterOptions = {}) {
     super(scene, x, y);
 
     const monsterType = options.type ?? "normal";
     this.type = monsterType;
+    this.setDepth(monsterType === "boss" ? 610 : 600);
     const typeConfig = enemyDefinitions[monsterType];
     this.radius = typeConfig.radius;
     this.scoreValue = options.scoreValue ?? typeConfig.scoreValue;
@@ -82,6 +84,8 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   updateMonster(deltaMs: number): void {
+    if (this.destroyed) return;
+
     const dt = deltaMs / 1000;
     const now = this.scene.time.now;
     let speedMultiplier = 1;
@@ -122,6 +126,8 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   takeDamage(damage: number, options: DamageOptions = {}): boolean {
+    if (this.destroyed) return false;
+
     this.hp = Math.max(0, this.hp - damage);
     this.updateBossHpBar();
 
@@ -140,6 +146,8 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   applyBurst(liftVelocity: number, slowMultiplier: number, slowDuration: number): void {
+    if (this.destroyed) return;
+
     this.applyLiftAndSlow(
       liftVelocity,
       slowMultiplier,
@@ -149,11 +157,17 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   freeze(options: FreezeOptions): void {
+    if (this.destroyed) return;
+
     const now = this.scene.time.now;
     const tintColor = options.tintColor ?? 0x5fb7ff;
     this.frozenUntil = Math.max(this.frozenUntil, now + options.durationMs);
     this.setFreezeTint(tintColor);
     this.scene.time.delayedCall(options.durationMs, () => {
+      if (this.destroyed) {
+        return;
+      }
+
       if (this.scene.time.now >= this.frozenUntil) {
         this.clearFreezeTint();
       }
@@ -161,7 +175,14 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   setDebugVisible(visible: boolean): void {
+    if (this.destroyed) return;
+
     this.collisionDebugBox.setVisible(visible);
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.destroyed = true;
+    super.destroy(fromScene);
   }
 
   private applyLiftAndSlow(liftVelocity: number, slowMultiplier: number, slowDuration: number): void {
@@ -185,28 +206,34 @@ export class Monster extends Phaser.GameObjects.Container {
   }
 
   private flash(): void {
+    if (this.destroyed) return;
+
     const hasSprite = Boolean(this.sprite);
 
     if (hasSprite) {
-      this.sprite?.setBlendMode(Phaser.BlendModes.ADD);
+      this.sprite?.setTint(0xffffdd);
       this.sprite?.setAlpha(1);
     } else {
       this.core.setFillStyle(0xffffff);
     }
 
     this.scene.time.delayedCall(80, () => {
+      if (this.destroyed) {
+        return;
+      }
+
       if (this.scene.time.now < this.frozenUntil) {
         return;
       }
 
       this.core.setFillStyle(this.baseColor);
-      this.sprite?.setBlendMode(Phaser.BlendModes.NORMAL);
+      this.sprite?.clearTint();
       this.sprite?.setAlpha(1);
     });
   }
 
   private playBossHitNudge(): void {
-    if (this.type !== "boss") {
+    if (this.destroyed || this.type !== "boss") {
       return;
     }
 
